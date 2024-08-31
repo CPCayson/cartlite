@@ -1,15 +1,8 @@
-// src/api/googleMapAspi.js
+// src/api/googleMapsApi.js
 
 let isScriptLoaded = false;
 let loadScriptPromise = null;
 
-/**
- * Loads the Google Maps JavaScript API into the page.
- *
- * @param {string} apiKey The API key to use when loading the script.
- * @returns {Promise} A promise that resolves when the script has been loaded
- * successfully, or rejects if the script load fails.
- */
 export const loadGoogleMapsScript = (apiKey) => {
   if (isScriptLoaded) {
     return loadScriptPromise;
@@ -18,8 +11,8 @@ export const loadGoogleMapsScript = (apiKey) => {
   loadScriptPromise = new Promise((resolve, reject) => {
     const script = document.createElement('script');
     script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
-    script.async = true;
-    script.defer = true;
+    script.async = true;  // Load asynchronously to prevent blocking
+    script.defer = true;  // Ensures it doesn't execute until page has finished parsing
     script.onload = () => {
       isScriptLoaded = true;
       resolve();

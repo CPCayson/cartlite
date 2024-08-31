@@ -1,8 +1,11 @@
-import  { createContext, useContext, useEffect, useState } from 'react';
-import { auth, db } from '../firebase/firebaseConfig';
+import { createContext, useContext, useEffect, useState } from 'react';
+import PropTypes from 'prop-types';
+import { auth, db } from '../firebase/firebaseConfig'; 
 
+// Create a Firebase Context
 const FirebaseContext = createContext(null);
 
+// Firebase Provider Component
 export const FirebaseProvider = ({ children }) => {
   console.log('FirebaseContext: Initializing Firebase Provider');
   
@@ -10,6 +13,8 @@ export const FirebaseProvider = ({ children }) => {
 
   useEffect(() => {
     console.log('FirebaseContext: Setting up Firebase Auth listener');
+    
+    // Listen for auth state changes
     const unsubscribe = auth.onAuthStateChanged((currentUser) => {
       if (currentUser) {
         console.log('FirebaseContext: User logged in', currentUser);
@@ -20,6 +25,7 @@ export const FirebaseProvider = ({ children }) => {
       }
     });
 
+    // Cleanup subscription on unmount
     return () => unsubscribe();
   }, []);
 
@@ -30,16 +36,20 @@ export const FirebaseProvider = ({ children }) => {
   );
 };
 
-import PropTypes from 'prop-types';
-
+// Define PropTypes for FirebaseProvider
 FirebaseProvider.propTypes = {
   children: PropTypes.node.isRequired,
 };
 
-export const useFirebase = () => {
+// Custom hook to use Firebase Context
+const useFirebase = () => {
   const context = useContext(FirebaseContext);
+  
   if (!context) {
-    console.error('useFirebase must be used within a FirebaseProvider');
+    throw new Error('useFirebase must be used within a FirebaseProvider');
   }
+  
   return context;
 };
+
+export default useFirebase;

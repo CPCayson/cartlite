@@ -20,7 +20,7 @@ const OnboardingStep = ({ target, content, onNext, onClose }) => (
 const RiderLayout = () => {
   const [isLeftPanelOpen, setIsLeftPanelOpen] = useState(true);
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(false);
-  const [activeView, setActiveView] = useState('businesses');
+  const [activeView, setActiveView] = useState('rabbit');
   const [activeCategory, setActiveCategory] = useState('all food');
   const [viewType, setViewType] = useState('list');
   const [selectedItem, setSelectedItem] = useState(null);
@@ -64,7 +64,7 @@ const RiderLayout = () => {
   ];
 
   const onboardingSteps = [
-    { target: 'left-panel', content: 'Browse businesses and cars in the left panel' },
+    { target: 'left-panel', content: 'Browse rabbit and cars in the left panel' },
     { target: 'search-bar', content: 'Use the search bar to find specific places or rides' },
     { target: 'map-placeholder', content: 'View locations on the interactive map' },
     { target: 'right-panel', content: 'See detailed information when you select an item' },
@@ -111,7 +111,7 @@ const RiderLayout = () => {
   };
 
   const renderItems = () => {
-    const items = activeView === 'businesses' ? sampleBusinesses[activeCategory] : sampleCars;
+    const items = activeView === 'rabbit' ? sampleBusinesses[activeCategory] : sampleCars;
     return items.map(item => (
       <div key={item.id} 
            className={`bg-white dark:bg-gray-700 p-4 rounded-lg shadow ${viewType === 'grid' ? 'w-full sm:w-1/2 md:w-1/3' : 'w-full'} cursor-pointer mb-4`} 
@@ -148,8 +148,8 @@ const RiderLayout = () => {
           <div className="p-4">
             <div className="flex justify-between mb-4">
               <button 
-                className={`px-3 py-1 rounded ${activeView === 'businesses' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-white'}`}
-                onClick={() => setActiveView('businesses')}
+                className={`px-3 py-1 rounded ${activeView === 'rabbit' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-white'}`}
+                onClick={() => setActiveView('rabbit')}
               >
                 Businesses
               </button>
@@ -160,7 +160,7 @@ const RiderLayout = () => {
                 Cars
               </button>
             </div>
-            {activeView === 'businesses' && (
+            {activeView === 'rabbit' && (
               <div className="flex flex-wrap justify-start mb-4">
                 {businessCategories.map((category) => (
                   <button
@@ -197,7 +197,7 @@ const RiderLayout = () => {
             <div className="relative">
               <input
                 type="text"
-                placeholder="Search for rides or businesses..."
+                placeholder="Search for rides or rabbit..."
                 className="w-full p-2 pr-10 rounded-full border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-800 dark:text-white"
               />
               <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-300" />

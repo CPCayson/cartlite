@@ -1,0 +1,335 @@
+Folder: hosting/src\api
+Filename: googleMapsApi.jsx
+Contents:
+// src/api/googleMapAspi.js
+
+let isScriptLoaded = false;
+let loadScriptPromise = null;
+
+/**
+ * Loads the Google Maps JavaScript API into the page.
+ *
+ * @param {string} apiKey The API key to use when loading the script.
+ * @returns {Promise} A promise that resolves when the script has been loaded
+ * successfully, or rejects if the script load fails.
+ * 
+ *  googleMapsApi.js: Handles Google Maps Script Loading
+
+This file is necessary because it encapsulates the logic for loading the Google Maps script dynamically. By checking if the script is already loaded (isScriptLoaded), it prevents multiple loads of the same script, which is crucial to avoid the "too many Google Maps API" errors you mentioned.
+ */
+export const loadGoogleMapsScript = (apiKey) => {
+  if (isScriptLoaded) {
+    return loadScriptPromise;
+  }
+
+  loadScriptPromise = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      isScriptLoaded = true;
+      resolve();
+    };
+    script.onerror = () => {
+      reject(new Error('Failed to load the Google Maps script'));
+    };
+    document.head.appendChild(script);
+  });
+
+  return loadScriptPromise;
+};
+
+
+
+================================================================================
+
+Folder: hosting/src\components
+Filename: MapView.jsx
+Contents:
+// src/components/MapView.jsx
+
+import { useEffect } from 'react';
+import PropTypes from 'prop-types';
+import { useMapsContext } from '../context/useMapsContext';
+
+const MapView = ({ isLeftPanelOpen, isRightPanelOpen }) => {
+  const { mapRef, initializeMapInstance, isLoaded, error } = useMapsContext();
+
+  useEffect(() => {
+    if (isLoaded) {
+      initializeMapInstance();
+    }
+  }, [isLoaded, initializeMapInstance]);
+
+  return (
+    <div className={`relative w-full h-full ${isLeftPanelOpen && isRightPanelOpen ? 'hidden' : ''}`}>
+      {error && <p className="text-red-500">Error loading Google Maps: {error.message}</p>}
+      <div ref={mapRef} className="w-full h-full"></div>
+      {/* Other UI components */}
+    </div>
+  );
+};
+MapView.propTypes = {
+  isLeftPanelOpen: PropTypes.bool.isRequired,
+  isRightPanelOpen: PropTypes.bool.isRequired,
+  setIsLeftPanelOpen: PropTypes.func.isRequired,
+};
+
+export default MapView;
+
+
+================================================================================
+
+Folder: hosting/src\context
+Filename: MapsContext.jsx
+Contents:
+// src/context/MapsContext.jsx
+// en to Use Context
+
+// React's Context API is useful for:
+
+//     Global State Management: When you have data or state that needs to be accessed by many components at different levels of the component tree, using context avoids "prop drilling" (passing props through many levels).
+//     Managing Shared State or Functions: If multiple components need to share the same state or access the same functions, context provides a way to share without repeatedly passing props.
+//     Complex State Interactions: When the state is complex and needs to be updated by multiple components, context can help manage these updates in a centralized manner.
+
+// Do You Need Context for Google Maps?
+
+// For your case, consider the following:
+
+//     Centralized Map Instance: If you have a single Google Maps instance that multiple components interact with (e.g., adding/removing markers, setting center or zoom level, handling map events), context can be helpful to manage this shared state and provide a unified interface for interacting with the map.
+
+//     Shared Map-Related State: If multiple components need access to shared map-related state (like the user’s location, map instance, or selected markers), a context would be beneficial.
+
+//     Decoupling Components: If you want to decouple your components from the details of the map instance or other shared state, a context provides a clean way to encapsulate this logic.
+
+// src/context/MapsContext.jsx
+
+import  { createContext, useState, useRef, useCallback } from 'react';
+import { initializeMap } from '../utils/googleMapsUtils';
+import { useGoogleMaps } from '../hooks/useGoogleMaps';
+import PropTypes from 'prop-types';
+
+// Create a context for the map
+const MapsContext = createContext();
+
+export const MapsProvider = ({ children, apiKey }) => {
+  const [map, setMap] = useState(null);
+  const mapRef = useRef(null);
+  const { isLoaded, error } = useGoogleMaps(apiKey);
+
+  // Function to initialize the map, only if it's not already initialized
+  const initializeMapInstance = useCallback(() => {
+    if (isLoaded && mapRef.current && !map) {
+      const mapOptions = {
+        center: { lat: 30.3083, lng: -89.3306 },
+        zoom: 19,
+        mapTypeId: 'satellite',
+      };
+
+      const mapInstance = initializeMap(mapRef.current, mapOptions);
+      setMap(mapInstance);
+    }
+  }, [isLoaded, map]);
+
+  return (
+    <MapsContext.Provider value={{ map, initializeMapInstance, mapRef, isLoaded, error }}>
+      {children}
+    </MapsContext.Provider>
+  );
+};
+
+
+MapsProvider.propTypes = {
+  children: PropTypes.node.isRequired,
+  apiKey: PropTypes.string.isRequired,
+};
+
+export { MapsContext };
+
+
+================================================================================
+
+Folder: hosting/src\context
+Filename: useMapsContext.jsx
+Contents:
+// src/context/useMapsContext.jsx
+
+import { useContext, useEffect } from 'react';
+import { MapsContext } from './MapsContext'; // Import the MapsContext
+
+const useMapsContext = (mapRef, center = { lat: 30.3083, lng: -89.3306 }, zoom = 19) => {
+  const { map, initializeMapInstance, isLoaded, error } = useContext(MapsContext);
+
+  // Initialize the map when the component using this hook mounts
+  useEffect(() => {
+    if (isLoaded && mapRef.current) {
+      initializeMapInstance();
+      if (map) {
+        map.setCenter(center);
+        map.setZoom(zoom);
+      }
+    }
+  }, [isLoaded, mapRef, center, zoom, initializeMapInstance, map]);
+
+  return { map, isLoaded, error };
+};
+
+export { useMapsContext }; 
+
+
+================================================================================
+
+Folder: hosting/src\hooks
+Filename: useGoogleMaps.jsx
+Contents:
+// src/hooks/useGoogleMaps.js
+//The custom hook useGoogleMaps is essential because it provides a React-friendly way to manage the loading state of the Google Maps script. Hooks are a powerful feature in React that allows you to manage side effects and state logic in a more modular way.
+import { useEffect, useState } from 'react';
+import { loadGoogleMapsScript } from '../api/googleMapsApi';
+
+export const useGoogleMaps = (apiKey) => {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    loadGoogleMapsScript(apiKey)
+      .then(() => setIsLoaded(true))
+      .catch((err) => setError(err));
+  }, [apiKey]);
+
+  return { isLoaded, error };
+};
+
+
+================================================================================
+
+Folder: hosting/src\utils
+Filename: googleMapsUtils.jsx
+Contents:
+// src/utils/googleMapsUtils.js
+//This file is important as it centralizes utility functions related to Google Maps. By separating these functions, you maintain a clean codebase where each file has a single responsibility. Functions like initializeMap and addMarker are reusable across different components that might need to interact with Google Maps.
+//            fetchPlaces(map, category, setPlaces, callback): Fetch places using Google Places API.
+// createMarkers(map, places, category, categories): Create markers on the map.
+//loadGoogleMapsAPI(): Dynamically load the Google Maps API script.
+export const initializeMap = (mapElement, options) => {
+    const map = new window.google.maps.Map(mapElement, options);
+    return map;
+};  
+  export const addMarker = (map, position, options) => {
+    const marker = new window.google.maps.Marker({
+      position,
+      map,
+      ...options,
+    });
+    return marker;
+  };  
+
+================================================================================
+
+Contents of app.jsx:
+import  { useState, useEffect } from 'react';
+import Header from './components/Header.jsx';
+import LeftPanel from './components/LeftPanel.jsx';
+import RightPanel from './components/RightPanel.jsx';
+import Footer from './components/Footer.jsx';
+import { FirebaseProvider } from './context/FirebaseContext.jsx';
+import { ChakraProvider } from '@chakra-ui/react';
+import './App.css';
+import { ChevronLeft, ChevronRight } from 'lucide-react'; // Correct imports
+import {ErrorBoundary} from './context/ErrorBoundary.jsx';
+import { MapsProvider } from './context/MapsContext.jsx';
+import MapView from './components/MapView';
+import { StripeProvider } from './context/StripeContext.jsx'; // Import StripeProvider
+import { AuthProvider } from './context/AuthContext.jsx'; // Import AuthProvider
+const App = () => {
+  const [darkMode, setDarkMode] = useState(false);
+  const [appMode, setAppMode] = useState('host'); // 'business' or 'host'
+  const [isLeftPanelOpen, setIsLeftPanelOpen] = useState(true);
+  const [isRightPanelOpen, setIsRightPanelOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [activeView, setActiveView] = useState('rabbit');
+  const [activeCategory, setActiveCategory] = useState('all food');
+  const [viewType, setViewType] = useState('list');
+
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
+
+  // Function to handle item selection
+  const handleSelectItem = (item) => {
+    setSelectedItem(item);
+    setIsRightPanelOpen(true);
+  };
+
+  // Function to handle settings click
+  const handleSettingsClick = () => {
+    setIsRightPanelOpen(!isRightPanelOpen);
+  };
+
+  return (
+    <div className={`flex flex-col h-screen ${darkMode ? 'dark' : ''}`}>
+      <ErrorBoundary>
+        <FirebaseProvider>
+          <ChakraProvider>
+            <MapsProvider apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
+            <AuthProvider> {/* Wrap the application with AuthProvider */}
+            <StripeProvider>
+              <Header 
+                darkMode={darkMode}
+                setDarkMode={setDarkMode}
+                appMode={appMode}
+                setAppMode={setAppMode}
+                setIsLeftPanelOpen={setIsLeftPanelOpen}
+              />
+              <div className="flex flex-1 overflow-hidden">
+                <LeftPanel 
+                  isOpen={isLeftPanelOpen}
+                  setIsOpen={setIsLeftPanelOpen}
+                  activeView={activeView}
+                  setActiveView={setActiveView}
+                  activeCategory={activeCategory}
+                  setActiveCategory={setActiveCategory}
+                  viewType={viewType}
+                  setViewType={setViewType}
+                  handleSelectItem={handleSelectItem} // Correctly passing the function
+                  appMode={appMode}
+                  onSettingsClick={handleSettingsClick} // Settings click handler
+                />
+                <main className={`flex-1 flex flex-col relative transition-all duration-300 ${isLeftPanelOpen && isRightPanelOpen ? 'hidden' : ''}`}>
+                  {!isRightPanelOpen && (
+                    <div className="w-full h-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
+                      <MapView isLeftPanelOpen={isLeftPanelOpen} isRightPanelOpen={isRightPanelOpen} setIsLeftPanelOpen={setIsLeftPanelOpen} />
+                    </div>
+                  )}
+                  <button
+                    onClick={() => setIsLeftPanelOpen(!isLeftPanelOpen)}
+                    className="absolute top-1/2 left-0 transform -translate-y-1/2 bg-white dark:bg-gray-700 rounded-r-full p-2 shadow-md"
+                  >
+                    {isLeftPanelOpen ? <ChevronLeft className="text-gray-600 dark:text-gray-300" /> : <ChevronRight className="text-gray-600 dark:text-gray-300" />}
+                  </button>
+                </main>
+                <RightPanel 
+                  isOpen={isRightPanelOpen}
+                  setIsOpen={setIsRightPanelOpen}
+                  selectedItem={selectedItem}
+                  appMode={appMode}
+                />
+              </div>
+              <Footer />
+              </StripeProvider>
+              </AuthProvider>
+            </MapsProvider>
+          </ChakraProvider>
+        </FirebaseProvider>
+      </ErrorBoundary>
+    </div>
+  );
+};
+
+export default App;
+

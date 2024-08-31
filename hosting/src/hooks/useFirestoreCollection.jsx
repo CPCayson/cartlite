@@ -1,5 +1,5 @@
 // src/hooks/useFirestoreCollection.js
-
+//  useFirestoreCollection(collectionName): Manage Firestore data fetching and listening
 import { useState, useEffect } from 'react';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig'; // Import Firestore instance

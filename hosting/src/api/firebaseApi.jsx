@@ -1,5 +1,9 @@
-import { db, auth } from '../firebase/firebaseConfig';
-import { collection, doc, setDoc, getDoc, updateDoc, addDoc, query, where, onSnapshot, GeoPoint, serverTimestamp } from 'firebase/firestore';
+import { db } from '../firebase/firebaseConfig';
+import { collection, doc, setDoc, getDoc, updateDoc, query, where, onSnapshot, GeoPoint, serverTimestamp } from 'firebase/firestore';
+
+// need these getCurrentRides, getPendingRequests acceptRide, rejectRide, uploadImage
+
+
 
 // Function to create a new ride request
 export async function createRideRequest(paymentIntent, rideDetails) {

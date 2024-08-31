@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import  { useEffect, useState } from 'react';
 import { useFirebase } from '../context/FirebaseContext'; // Using useFirebase hook
 
 const ViewCarts = () => {

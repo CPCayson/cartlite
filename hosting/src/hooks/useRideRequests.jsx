@@ -1,5 +1,5 @@
 // src/hooks/useRideRequests.js
-
+//            useRideRequests(): Manage ride requests.
 import { useState, useEffect } from 'react';
 import firebase from '../firebase/firebaseConfig';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';

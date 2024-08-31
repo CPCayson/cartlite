@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import Button from './Button';
 
 const OnboardingStep = ({ content, onNext, onClose }) => (
@@ -16,6 +17,22 @@ const OnboardingStep = ({ content, onNext, onClose }) => (
     </div>
   </div>
 );
+
+
+OnboardingStep.propTypes = {
+  content: PropTypes.string.isRequired,
+  onNext: PropTypes.func.isRequired,
+  onClose: PropTypes.func.isRequired,
+};
+
+export { OnboardingStep };
+
+OnboardingStep.propTypes = {
+  content: PropTypes.string.isRequired,
+  onNext: PropTypes.func.isRequired,
+  onClose: PropTypes.func.isRequired,
+};
+
 
 const Onboarding = ({ isActive, onComplete }) => {
   const [step, setStep] = React.useState(0);
@@ -45,6 +62,11 @@ const Onboarding = ({ isActive, onComplete }) => {
       onClose={onComplete}
     />
   );
+};
+
+Onboarding.propTypes = {
+  isActive: PropTypes.bool.isRequired,
+  onComplete: PropTypes.func.isRequired,
 };
 
 export default Onboarding;
