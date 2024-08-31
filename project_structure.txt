@@ -1,0 +1,78 @@
+.
+├── README.md
+├── firebase.json
+├── firestore.indexes.json
+├── firestore.rules
+├── functions
+│   ├── index.js
+│   ├── package-lock.json
+│   └── package.json
+├── hosting
+│   ├── README.md
+│   ├── eslint.config.js
+│   ├── index.html
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── public
+│   │   └── vite.svg
+│   ├── src
+│   │   ├── App.css
+│   │   ├── App.jsx
+│   │   ├── assets
+│   │   ├── index.css
+│   │   └── main.jsx
+│   └── vite.config.js
+├── jsconfig.json
+├── package-lock.json
+├── package.json
+├── project_structure.txt
+├── public
+│   ├── favicon.ico
+│   ├── index.html
+│   ├── logo192.png
+│   ├── logo512.png
+│   ├── manifest.json
+│   └── robots.txt
+└── src
+    ├── App.jsx
+    ├── api
+    │   ├── firebaseApi.js
+    │   ├── googleMapsApi.js
+    │   └── stripeApi.js
+    ├── components
+    │   ├── Button.jsx
+    │   ├── Footer.jsx
+    │   ├── Header.jsx
+    │   ├── OnboardingStep.jsx
+    │   └── Panel.jsx
+    ├── context
+    │   ├── FirebaseContext.js
+    │   ├── MapsContext.js
+    │   ├── StripeContext.js
+    │   ├── useFirebaseContext.js
+    │   ├── useMapsContext.js
+    │   └── useStripeContext.js
+    ├── hooks
+    │   ├── useAuth.js
+    │   ├── useFetchStripeData.js
+    │   ├── useFirestoreCollection.js
+    │   ├── useGoogleMaps.js
+    │   ├── usePlaces.js
+    │   ├── useRideRequests.js
+    │   ├── useStripeLink.js
+    │   └── useUserLocation.js
+    ├── index.jsx
+    ├── layouts
+    │   ├── AppLayout.jsx
+    │   ├── DriverLayout.jsx
+    │   └── RiderLayout.jsx
+    ├── styles
+    │   ├── App.css
+    │   └── index.css
+    └── utils
+        ├── constants.js
+        ├── firebaseUtils.js
+        ├── googleMapsUtils.js
+        └── stripeUtils.js
+
+14 directories, 61 files
