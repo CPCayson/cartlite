@@ -1,10 +1,7 @@
-// src/context/MapsContext.jsx
-
 import { createContext, useState, useRef, useCallback, useEffect } from 'react';
 import { loadGoogleMapsScript } from '../api/googleMapsApi';
 import PropTypes from 'prop-types';
 
-// Create a context for the map
 const MapsContext = createContext();
 
 export const MapsProvider = ({ children, apiKey }) => {
@@ -14,9 +11,17 @@ export const MapsProvider = ({ children, apiKey }) => {
   const mapRef = useRef(null);
 
   useEffect(() => {
-    loadGoogleMapsScript(apiKey)
-      .then(() => setIsLoaded(true))
-      .catch((err) => setError(err));
+    const loadScript = async () => {
+      try {
+        await loadGoogleMapsScript(apiKey);
+        setIsLoaded(true);
+      } catch (err) {
+        setError(err);
+        console.error('Error loading Google Maps script:', err);
+      }
+    };
+
+    loadScript();
   }, [apiKey]);
 
   const initializeMapInstance = useCallback(() => {

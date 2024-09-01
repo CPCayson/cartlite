@@ -1,29 +1,42 @@
 // src/hooks/useFirestoreCollection.js
 //  useFirestoreCollection(collectionName): Manage Firestore data fetching and listening
-import { useState, useEffect } from 'react';
-import { collection, onSnapshot } from 'firebase/firestore';
-import { db } from '../firebase/firebaseConfig'; // Import Firestore instance
+// hosting/src/hooks/useFirestoreCollection.jsx
 
-const useFirestoreCollection = (collectionName) => {
+import { useState, useEffect } from 'react';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { db } from '../firebase/firebaseConfig';
+
+const useFirestoreCollection = (collectionName, conditions = []) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    console.log(`useFirestoreCollection: Setting up listener for collection: ${collectionName}`);
-    const unsubscribe = onSnapshot(collection(db, collectionName), (snapshot) => {
-      const docs = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      console.log('useFirestoreCollection: Retrieved data:', docs);
-      setData(docs);
-      setLoading(false);
-    });
+    let q = collection(db, collectionName);
 
-    return () => {
-      console.log(`useFirestoreCollection: Cleaning up listener for collection: ${collectionName}`);
-      unsubscribe();
-    };
-  }, [collectionName]);
+    // Apply conditions if provided
+    if (conditions.length > 0) {
+      q = query(q, ...conditions);
+    }
 
-  return { data, loading };
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const docs = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        setData(docs);
+        setLoading(false);
+      },
+      (err) => {
+        console.error(`Error fetching ${collectionName}:`, err);
+        setError(err);
+        setLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [collectionName, conditions]);
+
+  return { data, loading, error };
 };
 
 export default useFirestoreCollection;

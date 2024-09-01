@@ -1,234 +1,526 @@
 Folder: hosting/src\api
-Filename: googleMapsApi.jsx
+Filename: stripeApi.jsx
 Contents:
-// src/api/googleMapAspi.js
+// stripeApi.jsx
+import { db } from '../firebase/firebaseConfig';
+import { doc, updateDoc } from 'firebase/firestore';
+import axios from 'axios';
+import { auth } from '../firebase/firebaseConfig'; // Ensure this is the correct path
 
-let isScriptLoaded = false;
-let loadScriptPromise = null;
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-/**
- * Loads the Google Maps JavaScript API into the page.
- *
- * @param {string} apiKey The API key to use when loading the script.
- * @returns {Promise} A promise that resolves when the script has been loaded
- * successfully, or rejects if the script load fails.
- * 
- *  googleMapsApi.js: Handles Google Maps Script Loading
+// Create an Axios instance
+const stripeApi = axios.create({
+  baseURL: API_BASE_URL,
+});
 
-This file is necessary because it encapsulates the logic for loading the Google Maps script dynamically. By checking if the script is already loaded (isScriptLoaded), it prevents multiple loads of the same script, which is crucial to avoid the "too many Google Maps API" errors you mentioned.
- */
-export const loadGoogleMapsScript = (apiKey) => {
-  if (isScriptLoaded) {
-    return loadScriptPromise;
-  }
-
-  loadScriptPromise = new Promise((resolve, reject) => {
-    const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
-    script.async = true;
-    script.defer = true;
-    script.onload = () => {
-      isScriptLoaded = true;
-      resolve();
-    };
-    script.onerror = () => {
-      reject(new Error('Failed to load the Google Maps script'));
-    };
-    document.head.appendChild(script);
-  });
-
-  return loadScriptPromise;
-};
-
-
-
-================================================================================
-
-Folder: hosting/src\components
-Filename: MapView.jsx
-Contents:
-// src/components/MapView.jsx
-
-import { useEffect } from 'react';
-import PropTypes from 'prop-types';
-import { useMapsContext } from '../context/useMapsContext';
-
-const MapView = ({ isLeftPanelOpen, isRightPanelOpen }) => {
-  const { mapRef, initializeMapInstance, isLoaded, error } = useMapsContext();
-
-  useEffect(() => {
-    if (isLoaded) {
-      initializeMapInstance();
-    }
-  }, [isLoaded, initializeMapInstance]);
-
-  return (
-    <div className={`relative w-full h-full ${isLeftPanelOpen && isRightPanelOpen ? 'hidden' : ''}`}>
-      {error && <p className="text-red-500">Error loading Google Maps: {error.message}</p>}
-      <div ref={mapRef} className="w-full h-full"></div>
-      {/* Other UI components */}
-    </div>
-  );
-};
-MapView.propTypes = {
-  isLeftPanelOpen: PropTypes.bool.isRequired,
-  isRightPanelOpen: PropTypes.bool.isRequired,
-  setIsLeftPanelOpen: PropTypes.func.isRequired,
-};
-
-export default MapView;
-
-
-================================================================================
-
-Folder: hosting/src\context
-Filename: MapsContext.jsx
-Contents:
-// src/context/MapsContext.jsx
-// en to Use Context
-
-// React's Context API is useful for:
-
-//     Global State Management: When you have data or state that needs to be accessed by many components at different levels of the component tree, using context avoids "prop drilling" (passing props through many levels).
-//     Managing Shared State or Functions: If multiple components need to share the same state or access the same functions, context provides a way to share without repeatedly passing props.
-//     Complex State Interactions: When the state is complex and needs to be updated by multiple components, context can help manage these updates in a centralized manner.
-
-// Do You Need Context for Google Maps?
-
-// For your case, consider the following:
-
-//     Centralized Map Instance: If you have a single Google Maps instance that multiple components interact with (e.g., adding/removing markers, setting center or zoom level, handling map events), context can be helpful to manage this shared state and provide a unified interface for interacting with the map.
-
-//     Shared Map-Related State: If multiple components need access to shared map-related state (like the user’s location, map instance, or selected markers), a context would be beneficial.
-
-//     Decoupling Components: If you want to decouple your components from the details of the map instance or other shared state, a context provides a clean way to encapsulate this logic.
-
-// src/context/MapsContext.jsx
-
-import  { createContext, useState, useRef, useCallback } from 'react';
-import { initializeMap } from '../utils/googleMapsUtils';
-import { useGoogleMaps } from '../hooks/useGoogleMaps';
-import PropTypes from 'prop-types';
-
-// Create a context for the map
-const MapsContext = createContext();
-
-export const MapsProvider = ({ children, apiKey }) => {
-  const [map, setMap] = useState(null);
-  const mapRef = useRef(null);
-  const { isLoaded, error } = useGoogleMaps(apiKey);
-
-  // Function to initialize the map, only if it's not already initialized
-  const initializeMapInstance = useCallback(() => {
-    if (isLoaded && mapRef.current && !map) {
-      const mapOptions = {
-        center: { lat: 30.3083, lng: -89.3306 },
-        zoom: 19,
-        mapTypeId: 'satellite',
-      };
-
-      const mapInstance = initializeMap(mapRef.current, mapOptions);
-      setMap(mapInstance);
-    }
-  }, [isLoaded, map]);
-
-  return (
-    <MapsContext.Provider value={{ map, initializeMapInstance, mapRef, isLoaded, error }}>
-      {children}
-    </MapsContext.Provider>
-  );
-};
-
-
-MapsProvider.propTypes = {
-  children: PropTypes.node.isRequired,
-  apiKey: PropTypes.string.isRequired,
-};
-
-export { MapsContext };
-
-
-================================================================================
-
-Folder: hosting/src\context
-Filename: useMapsContext.jsx
-Contents:
-// src/context/useMapsContext.jsx
-
-import { useContext, useEffect } from 'react';
-import { MapsContext } from './MapsContext'; // Import the MapsContext
-
-const useMapsContext = (mapRef, center = { lat: 30.3083, lng: -89.3306 }, zoom = 19) => {
-  const { map, initializeMapInstance, isLoaded, error } = useContext(MapsContext);
-
-  // Initialize the map when the component using this hook mounts
-  useEffect(() => {
-    if (isLoaded && mapRef.current) {
-      initializeMapInstance();
-      if (map) {
-        map.setCenter(center);
-        map.setZoom(zoom);
+// Add a request interceptor to attach the Firebase auth token
+stripeApi.interceptors.request.use(async (config) => {
+  try {
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      const token = await currentUser.getIdToken(true); // Force refresh the token
+      config.headers.Authorization = `Bearer ${token}`;
+    } else {
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
       }
     }
-  }, [isLoaded, mapRef, center, zoom, initializeMapInstance, map]);
+    return config;
+  } catch (error) {
+    console.error('Error setting up request interceptor:', error);
+    return Promise.reject(error);
+  }
+});
 
-  return { map, isLoaded, error };
+// Function to update Stripe status in Firestore
+export const updateStripeStatusInDb = async (userId, status) => {
+  try {
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, { stripeAccountStatus: status });
+  } catch (error) {
+    console.error('Error updating Stripe status in Firestore:', error);
+    throw error; // Rethrow to handle it in the calling function
+  }
 };
 
-export { useMapsContext }; 
+// Function to create an account link for Stripe onboarding
+export const createAccountLink = async (accountId) => {
+  if (!accountId) {
+    throw new Error('Account ID is required');
+  }
+  try {
+    const response = await stripeApi.post('/stripeApi/create-account-link', { accountId });
+    return response.data;
+  } catch (error) {
+    console.error('Error creating account link:', error);
+    throw new Error('Failed to create account link: ' + (error.response?.data?.error || error.message));
+  }
+};
+
+// Function to create a new Stripe customer
+export const createCustomer = async (customerData) => {
+  try {
+    const response = await stripeApi.post('/stripeApi/create-customer', customerData);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating Stripe customer:', error);
+    throw new Error('Failed to create Stripe customer: ' + (error.response?.data?.error || error.message));
+  }
+};
+
+// Function to update an existing Stripe customer
+export const updateCustomer = async (customerId, updateData) => {
+  if (!customerId) {
+    throw new Error('Customer ID is required');
+  }
+  try {
+    const response = await stripeApi.post(`/stripeApi/update-customer/${customerId}`, updateData);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating Stripe customer:', error);
+    throw new Error('Failed to update Stripe customer: ' + (error.response?.data?.error || error.message));
+  }
+};
+
+// Function to retrieve a payment intent
+export const retrievePaymentIntent = async (paymentIntentId) => {
+  if (!paymentIntentId) {
+    throw new Error('Payment Intent ID is required');
+  }
+  try {
+    const response = await stripeApi.get(`/stripeApi/retrieve-payment-intent/${paymentIntentId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error retrieving payment intent:', error);
+    throw new Error('Failed to retrieve payment intent: ' + (error.response?.data?.error || error.message));
+  }
+};
+
+// Function to create a checkout session
+export const createCheckoutSession = async (sessionData) => {
+  try {
+    const response = await stripeApi.post('/stripeApi/create-checkout-session', sessionData);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating checkout session:', error);
+    throw new Error('Failed to create checkout session: ' + (error.response?.data?.error || error.message));
+  }
+};
+
+// Function to create a Stripe connected account
+export const createStripeConnectedAccount = async (email) => {
+  try {
+    const response = await stripeApi.post('/stripeApi/create-connected-account', { email });
+    return response.data;
+  } catch (error) {
+    console.error('Error creating Stripe connected account:', error);
+    throw new Error('Failed to create Stripe connected account: ' + (error.response?.data?.error || error.message));
+  }
+};
+
+// Function to create an account link for Stripe onboarding
+
+
+// Function to complete Stripe onboarding
+export const completeStripeOnboarding = async (accountId) => {
+  if (!accountId) {
+    throw new Error('Account ID is required');
+  }
+  try {
+    const response = await stripeApi.post('/stripeApi/complete-stripe-onboarding', { accountId });
+    return response.data;
+  } catch (error) {
+    console.error('Error completing Stripe onboarding:', error);
+    throw new Error('Failed to complete Stripe onboarding: ' + (error.response?.data?.error || error.message));
+  }
+};
+
+// Function to create an account session for Stripe Connect
+export const createAccountSession = async (accountId) => {
+  if (!accountId) {
+    throw new Error('Account ID is required');
+  }
+  try {
+    const response = await stripeApi.post('/stripeApi/create-account-session', { accountId });
+    return response.data;
+  } catch (error) {
+    console.error('Error creating account session:', error);
+    throw new Error('Failed to create account session: ' + (error.response?.data?.error || error.message));
+  }
+};
+
+// Function to get Stripe account status
+export const getStripeAccountStatus = async (accountId) => {
+  if (!accountId) {
+    throw new Error('Account ID is required');
+  }
+  try {
+    const response = await stripeApi.get(`/stripeApi/stripe-account-status/${accountId}`);
+    return response.data.status;
+  } catch (error) {
+    console.error('Error fetching Stripe account status:', error);
+    throw new Error('Failed to fetch Stripe account status: ' + (error.response?.data?.error || error.message));
+  }
+};
+
+// Function to create a payment intent
+export const createPaymentIntent = async (paymentDetails) => {
+  const headers = { 'Content-Type': 'application/json' };
+  if (!paymentDetails.rideId || paymentDetails.rideId.trim() === '') {
+    throw new Error('Ride ID is required and cannot be empty.');
+  }
+  try {
+    const response = await stripeApi.post('/stripeApi/create-payment-intent', paymentDetails, { headers });
+    return response.data;
+  } catch (error) {
+    console.error('Error creating payment intent:', error);
+    throw new Error('Failed to create payment intent: ' + (error.response?.data?.error || error.message));
+  }
+};
+
+// Function to capture a payment intent
+export const capturePaymentIntent = async (rideId, amount) => {
+  if (!rideId || !amount) {
+    throw new Error('Missing rideId or amount in request body');
+  }
+  try {
+    const response = await stripeApi.post('/stripeApi/capture-payment-intent', { rideId, amount });
+    return response.data;
+  } catch (error) {
+    console.error('Error capturing payment:', error);
+    throw new Error('Failed to capture payment: ' + (error.response?.data?.error || error.message));
+  }
+};
+
+// Function to cancel a payment intent
+export const cancelPaymentIntent = async (paymentIntentId) => {
+  if (!paymentIntentId) {
+    throw new Error('Payment Intent ID is required');
+  }
+  try {
+    const response = await stripeApi.post('/stripeApi/cancel-payment-intent', { paymentIntentId });
+    return response.data;
+  } catch (error) {
+    console.error('Error canceling payment intent:', error);
+    throw new Error('Failed to cancel payment intent: ' + (error.response?.data?.error || error.message));
+  }
+};
+
+// Function to refund a payment intent
+export const refundPaymentIntent = async (paymentIntentId) => {
+  if (!paymentIntentId) {
+    throw new Error('Payment Intent ID is required');
+  }
+  try {
+    const response = await stripeApi.post('/stripeApi/refund-payment-intent', { paymentIntentId });
+    return response.data;
+  } catch (error) {
+    console.error('Error refunding payment intent:', error);
+    throw new Error('Failed to refund payment: ' + (error.response?.data?.error || error.message));
+  }
+};
+
+// Function to handle request actions
+export const handleRequestAction = async (request, action) => {
+  try {
+    if (!request.rideId || !request.rideFee) {
+      throw new Error('Missing rideId or rideFee in the request data');
+    }
+
+    if (action === 'accept') {
+      await capturePaymentIntent(request.rideId, Math.round(request.rideFee * 100));
+    } else if (action === 'reject') {
+      if (!request.paymentIntentId) {
+        throw new Error('Payment Intent ID is required');
+      }
+      await cancelPaymentIntent(request.paymentIntentId);
+    }
+  } catch (error) {
+    console.error(`Error ${action === 'accept' ? 'accepting' : 'rejecting'} ride request:`, error);
+    throw error;
+  }
+};
+
+// Default export of the Axios instance for custom use cases
+export default stripeApi;
+
+
+================================================================================
+
+Folder: hosting/src\context
+Filename: StripeContext.jsx
+Contents:
+// StripeContext.jsx
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useAuth } from './AuthContext';
+import { updateStripeStatusInDb, createAccountLink } from '../api/stripeApi';
+import { db } from '../firebase/firebaseConfig';
+import { doc, getDoc } from 'firebase/firestore';
+import { toast } from 'react-toastify';
+import PropTypes from 'prop-types';
+
+// Create a context for Stripe-related data and functions
+const StripeContext = createContext();
+
+export const useStripe = () => useContext(StripeContext);
+
+export const StripeProvider = ({ children }) => {
+  const { user } = useAuth();
+  const [stripeAccountId, setStripeAccountId] = useState(null);
+  const [stripeAccountStatus, setStripeAccountStatus] = useState('not_created');
+
+  useEffect(() => {
+    const fetchStripeData = async () => {
+      if (user?.uid) {
+        try {
+          const userRef = doc(db, 'users', user.uid);
+          const userDoc = await getDoc(userRef);
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            setStripeAccountId(userData.stripeAccountId || null);
+            setStripeAccountStatus(userData.stripeAccountStatus || 'not_created');
+          } else {
+            console.error('No user document found');
+            toast.error('No user document found. Please complete the profile first.');
+          }
+        } catch (error) {
+          console.error('Error fetching Stripe data:', error);
+          toast.error('Failed to load Stripe data.');
+        }
+      }
+    };
+
+    fetchStripeData();
+  }, [user]);
+
+  const updateStripeStatus = async (status) => {
+    if (user?.uid) {
+      try {
+        await updateStripeStatusInDb(user.uid, status);
+        setStripeAccountStatus(status);
+        toast.success('Stripe status updated successfully.');
+      } catch (error) {
+        console.error('Error updating Stripe status:', error);
+        toast.error('Failed to update Stripe status.');
+      }
+    }
+  };
+
+  return (
+    <StripeContext.Provider value={{ stripeAccountId, stripeAccountStatus, setStripeAccountId, updateStripeStatus }}>
+      {children}
+    </StripeContext.Provider>
+  );
+};
+
+StripeProvider.propTypes = {
+  children: PropTypes.node.isRequired,
+};
+
+
+================================================================================
+
+Folder: hosting/src\context
+Filename: useStripeContext.jsx
+Contents:
+// src/contexts/StripeContext.jsx
+
+// Context Creation:
+
+// You create a StripeContext using createContext(). This context will hold the Stripe-related data and functions.
+// useStripe Hook:
+
+// This hook provides a convenient way to access the context values within your components. It uses useContext(StripeContext) to retrieve the values.
+// StripeProvider Component:
+
+// This component is responsible for providing the Stripe context to your application.
+// It uses the useAuth hook (assuming you have an authentication provider) to get the currentUser.
+// It initializes two state variables:
+// stripeAccountId: Stores the user's Stripe account ID.
+// stripeAccountStatus: Stores the status of the user's Stripe account (e.g., 'not_created', 'incomplete', 'verified').
+// Fetching Stripe Data:
+
+// Inside a useEffect hook, it fetches the user's Stripe data from Firestore when the currentUser changes.
+// It retrieves the user document from Firestore and updates the state variables with the fetched data.
+// updateStripeStatus Function:
+
+// This function allows you to update the user's Stripe account status in Firestore.
+// It takes the new status as an argument and updates the stripeAccountStatus field in the user's document.
+// Providing Context Values:
+
+// The StripeProvider wraps its children with StripeContext.Provider and passes the following values:
+// stripeAccountId
+// stripeAccountStatus
+// setStripeAccountId
+// updateStripeStatus
+import { useContext } from 'react';
+
+import { StripeContext } from './StripeContext';
+
+
+
+export function useStripeContext() {
+  const context = useContext(StripeContext);
+  if (!context) {
+    throw new Error('useStripeContext must be used within a StripeProvider');
+  }
+  return context;
+}
+
 
 
 ================================================================================
 
 Folder: hosting/src\hooks
-Filename: useGoogleMaps.jsx
+Filename: useFetchStripeData.jsx
 Contents:
-// src/hooks/useGoogleMaps.js
-//The custom hook useGoogleMaps is essential because it provides a React-friendly way to manage the loading state of the Google Maps script. Hooks are a powerful feature in React that allows you to manage side effects and state logic in a more modular way.
-import { useEffect, useState } from 'react';
-import { loadGoogleMapsScript } from '../api/googleMapsApi';
+//useFetchStripeData(apiEndpoint, params): Reusable hook for fetching Stripe data.
+import { useState, useEffect } from 'react';
+import stripeApi from '../api/stripeApi';
 
-export const useGoogleMaps = (apiKey) => {
-  const [isLoaded, setIsLoaded] = useState(false);
+export const useFetchStripeData = (endpoint, params = {}) => {
+  const [stripeData, setStripeData] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    loadGoogleMapsScript(apiKey)
-      .then(() => setIsLoaded(true))
-      .catch((err) => setError(err));
-  }, [apiKey]);
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const response = await stripeApi.get(endpoint, { params });
+        setStripeData(response.data);
+      } catch (error) {
+        setError(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [endpoint, params]);
 
-  return { isLoaded, error };
+  return { stripeData, loading, error };
 };
 
 
 ================================================================================
 
-Folder: hosting/src\utils
-Filename: googleMapsUtils.jsx
+Folder: hosting/src\hooks
+Filename: useStripe.js
 Contents:
-// src/utils/googleMapsUtils.js
-//This file is important as it centralizes utility functions related to Google Maps. By separating these functions, you maintain a clean codebase where each file has a single responsibility. Functions like initializeMap and addMarker are reusable across different components that might need to interact with Google Maps.
-//            fetchPlaces(map, category, setPlaces, callback): Fetch places using Google Places API.
-// createMarkers(map, places, category, categories): Create markers on the map.
-//loadGoogleMapsAPI(): Dynamically load the Google Maps API script.
-export const initializeMap = (mapElement, options) => {
-    const map = new window.google.maps.Map(mapElement, options);
-    return map;
-};  
-  export const addMarker = (map, position, options) => {
-    const marker = new window.google.maps.Marker({
-      position,
-      map,
-      ...options,
-    });
-    return marker;
-  };  
+import { useEffect, useState } from 'react';
+import { useStripe as useStripeJs } from '@stripe/react-stripe-js'; // Import Stripe hook from @stripe/react-stripe-js
+import {
+  createStripeConnectedAccount,
+  getStripeAccountStatus,
+  createAccountLink,
+  retrievePaymentIntent,
+} from '../api/stripeApi';
+import { updateUserStripeAccount } from '../api/firebaseApi'; // Import any Firestore updates needed
+
+export const useStripe = (user, clientSecret = null) => {
+  const [stripeAccountStatus, setStripeAccountStatus] = useState('not_created');
+  const [loading, setLoading] = useState(true);
+  const [email, setEmail] = useState('');
+  const [isLinkAuthorized, setIsLinkAuthorized] = useState(false);
+  const [error, setError] = useState(null);
+  const stripe = useStripeJs();
+
+  useEffect(() => {
+    const initializeStripe = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // Check if the user has a Stripe account ID
+        if (!user.stripeAccountId) {
+          // Create a new Stripe connected account if it doesn't exist
+          const stripeAccount = await createStripeConnectedAccount(user.email);
+          // Update Firestore with the new Stripe account ID
+          await updateUserStripeAccount(user.uid, {
+            stripeAccountId: stripeAccount.accountId,
+            stripeAccountStatus: 'not_created',
+          });
+        }
+
+        // Fetch and set the Stripe account status
+        const stripeAccountData = await getStripeAccountStatus(user.stripeAccountId);
+        setStripeAccountStatus(stripeAccountData);
+
+        // If Stripe account needs onboarding, create and redirect to an account link
+        if (stripeAccountData === 'not_created' || stripeAccountData === 'incomplete') {
+          const accountLink = await createAccountLink(user.stripeAccountId);
+          window.location.href = accountLink.url;
+        }
+
+        // Handle payment intent retrieval if a client secret is provided
+        if (clientSecret) {
+          try {
+            const { paymentIntent } = await stripe.retrievePaymentIntent(clientSecret);
+            setEmail(paymentIntent.receipt_email || '');
+          } catch (err) {
+            console.error('Error retrieving payment intent:', err);
+            setError(err.message);
+          }
+        }
+      } catch (err) {
+        console.error('Error initializing Stripe:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initializeStripe();
+  }, [user, clientSecret, stripe]);
+
+  // Function to handle Stripe link authorization (for verifying identity)
+  const handleLinkAuthorization = async (e) => {
+    e.preventDefault();
+    if (!stripe || !clientSecret) return;
+
+    try {
+      const { error } = await stripe.verifyIdentity(clientSecret);
+      if (error) {
+        console.error('Error verifying identity:', error);
+        setError(error.message);
+      } else {
+        setIsLinkAuthorized(true);
+      }
+    } catch (err) {
+      console.error('Error during link authorization:', err);
+      setError(err.message);
+    }
+  };
+
+  return {
+    stripeAccountStatus,
+    loading,
+    email,
+    isLinkAuthorized,
+    handleLinkAuthorization,
+    error,
+  };
+};
+
+export default useStripe;
+
+
+================================================================================
+
+Folder: hosting/src\utils
+Filename: stripeUtils.js
+Contents:
+//Stripe-related constants like API URLs or keys.
 
 ================================================================================
 
 Contents of app.jsx:
-import  { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { collection, getDocs } from 'firebase/firestore';
 import Header from './components/Header.jsx';
 import LeftPanel from './components/LeftPanel.jsx';
 import RightPanel from './components/RightPanel.jsx';
@@ -236,39 +528,79 @@ import Footer from './components/Footer.jsx';
 import { FirebaseProvider } from './context/FirebaseContext.jsx';
 import { ChakraProvider } from '@chakra-ui/react';
 import './App.css';
-import { ChevronLeft, ChevronRight } from 'lucide-react'; // Correct imports
-import {ErrorBoundary} from './context/ErrorBoundary.jsx';
+import { ErrorBoundary } from './context/ErrorBoundary.jsx';
 import { MapsProvider } from './context/MapsContext.jsx';
 import MapView from './components/MapView';
-import { StripeProvider } from './context/StripeContext.jsx'; // Import StripeProvider
-import { AuthProvider } from './context/AuthContext.jsx'; // Import AuthProvider
+import { StripeProvider } from './context/StripeContext.jsx';
+import { AuthProvider } from './context/AuthContext.jsx';
+import { db } from './firebase/firebaseConfig'; // Ensure correct path to Firebase config
+
 const App = () => {
   const [darkMode, setDarkMode] = useState(false);
-  const [appMode, setAppMode] = useState('host'); // 'business' or 'host'
+  const [appMode, setAppMode] = useState('rabbit'); // 'rabbit' or 'host'
   const [isLeftPanelOpen, setIsLeftPanelOpen] = useState(true);
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
-  const [activeView, setActiveView] = useState('rabbit');
-  const [activeCategory, setActiveCategory] = useState('all food');
-  const [viewType, setViewType] = useState('list');
+  const [rideInProgress, setRideInProgress] = useState(false);
+  const [activeCategory, setActiveCategory] = useState('all'); // Initialize activeCategory
+  const [viewType, setViewType] = useState('list'); // Initialize viewType
+  const [businesses, setBusinesses] = useState([]); // Initialize businesses state
+  const [filteredBusinesses, setFilteredBusinesses] = useState([]); // State to store filtered businesses
 
+  // Fetch businesses from Firestore on component mount
   useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [darkMode]);
+    const fetchBusinesses = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, 'places'));
+        const businessesData = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setBusinesses(businessesData);
+        setFilteredBusinesses(businessesData); // Initialize filtered businesses with all fetched data
+      } catch (error) {
+        console.error('Error fetching businesses from Firebase:', error);
+      }
+    };
 
-  // Function to handle item selection
-  const handleSelectItem = (item) => {
-    setSelectedItem(item);
-    setIsRightPanelOpen(true);
+    fetchBusinesses();
+  }, []);
+
+  // Filter businesses based on the selected category
+  useEffect(() => {
+    if (activeCategory === 'all') {
+      setFilteredBusinesses(businesses);
+    } else {
+      setFilteredBusinesses(businesses.filter((business) => business.category === activeCategory));
+    }
+  }, [activeCategory, businesses]);
+
+  const handleAccept = (ride) => {
+    setSelectedItem(ride);
+    setIsLeftPanelOpen(false); // Close Left Panel
+    setIsRightPanelOpen(false); // Close Right Panel
+    setRideInProgress(true); // Set ride in progress
   };
 
-  // Function to handle settings click
+  const handleSelectItem = (item) => {
+    setSelectedItem(item);
+    setIsRightPanelOpen(true); // Open Right Panel
+    setIsLeftPanelOpen(true); // Ensure Left Panel is fully open
+  };
+
   const handleSettingsClick = () => {
     setIsRightPanelOpen(!isRightPanelOpen);
+    setIsLeftPanelOpen(!isRightPanelOpen); // Toggle Left Panel based on Right Panel state
+  };
+
+  const handleModeSwitch = () => {
+    if (appMode === 'rabbit') {
+      setAppMode('host'); // Switch to host mode
+      setIsRightPanelOpen(true); // Expand right panel for authentication form if needed
+    } else {
+      setAppMode('rabbit'); // Switch back to rabbit mode
+      setIsRightPanelOpen(false); // Close right panel
+    }
   };
 
   return (
@@ -277,51 +609,69 @@ const App = () => {
         <FirebaseProvider>
           <ChakraProvider>
             <MapsProvider apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
-            <AuthProvider> {/* Wrap the application with AuthProvider */}
-            <StripeProvider>
-              <Header 
-                darkMode={darkMode}
-                setDarkMode={setDarkMode}
-                appMode={appMode}
-                setAppMode={setAppMode}
-                setIsLeftPanelOpen={setIsLeftPanelOpen}
-              />
-              <div className="flex flex-1 overflow-hidden">
-                <LeftPanel 
-                  isOpen={isLeftPanelOpen}
-                  setIsOpen={setIsLeftPanelOpen}
-                  activeView={activeView}
-                  setActiveView={setActiveView}
-                  activeCategory={activeCategory}
-                  setActiveCategory={setActiveCategory}
-                  viewType={viewType}
-                  setViewType={setViewType}
-                  handleSelectItem={handleSelectItem} // Correctly passing the function
-                  appMode={appMode}
-                  onSettingsClick={handleSettingsClick} // Settings click handler
-                />
-                <main className={`flex-1 flex flex-col relative transition-all duration-300 ${isLeftPanelOpen && isRightPanelOpen ? 'hidden' : ''}`}>
-                  {!isRightPanelOpen && (
-                    <div className="w-full h-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
-                      <MapView isLeftPanelOpen={isLeftPanelOpen} isRightPanelOpen={isRightPanelOpen} setIsLeftPanelOpen={setIsLeftPanelOpen} />
-                    </div>
-                  )}
-                  <button
-                    onClick={() => setIsLeftPanelOpen(!isLeftPanelOpen)}
-                    className="absolute top-1/2 left-0 transform -translate-y-1/2 bg-white dark:bg-gray-700 rounded-r-full p-2 shadow-md"
-                  >
-                    {isLeftPanelOpen ? <ChevronLeft className="text-gray-600 dark:text-gray-300" /> : <ChevronRight className="text-gray-600 dark:text-gray-300" />}
-                  </button>
-                </main>
-                <RightPanel 
-                  isOpen={isRightPanelOpen}
-                  setIsOpen={setIsRightPanelOpen}
-                  selectedItem={selectedItem}
-                  appMode={appMode}
-                />
-              </div>
-              <Footer />
-              </StripeProvider>
+              <AuthProvider>
+                <StripeProvider>
+                  <Header 
+                    darkMode={darkMode}
+                    setDarkMode={setDarkMode}
+                    appMode={appMode}
+                    setAppMode={setAppMode}
+                    setIsLeftPanelOpen={setIsLeftPanelOpen}
+                    setIsRightPanelOpen={setIsRightPanelOpen}
+                    handleModeSwitch={handleModeSwitch} // Pass the mode switch handler
+                  />
+                  <div className="flex flex-1 overflow-hidden">
+                    <LeftPanel 
+                      isOpen={isLeftPanelOpen}
+                      setIsOpen={setIsLeftPanelOpen}
+                      appMode={appMode}
+                      handleAccept={handleAccept}
+                      handleSelectItem={handleSelectItem}
+                      activeCategory={activeCategory}
+                      setActiveCategory={setActiveCategory}
+                      viewType={viewType}
+                      setViewType={setViewType}
+                      rideInProgress={rideInProgress}
+                      handleSettingsClick={handleSettingsClick} // Pass the settings click handler
+                      businesses={filteredBusinesses} // Pass filtered businesses to LeftPanel
+                    />
+                    <main className={`flex-1 flex flex-col relative transition-all duration-300 ${isLeftPanelOpen && isRightPanelOpen ? 'hidden' : ''}`}>
+                      {/* Always show the MapView for Rabbit View */}
+                      {appMode === 'rabbit' && (
+                        <div className="w-full h-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
+                          <MapView 
+                            isLeftPanelOpen={isLeftPanelOpen} 
+                            isRightPanelOpen={isRightPanelOpen} 
+                            setIsLeftPanelOpen={setIsLeftPanelOpen}
+                            businesses={filteredBusinesses} // Pass filtered businesses to MapView
+                          />
+                        </div>
+                      )}
+                      
+                      {/* Show Ride Details or Dashboard in Host View */}
+                      {appMode === 'host' && !rideInProgress && (
+                        <div className="w-full h-full p-4 bg-white dark:bg-gray-800">
+                          <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">Dashboard Overview</h2>
+                          {/* Host dashboard overview content goes here */}
+                        </div>
+                      )}
+
+                      {appMode === 'host' && rideInProgress && (
+                        <div className="w-full h-full p-4 bg-white dark:bg-gray-800">
+                          <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">Ride Details</h2>
+                          {/* Ride details content goes here */}
+                        </div>
+                      )}
+                    </main>
+                    <RightPanel 
+                      isOpen={isRightPanelOpen && !rideInProgress} // Hide Right Panel when a ride is in progress
+                      setIsOpen={setIsRightPanelOpen}
+                      selectedItem={selectedItem}
+                      appMode={appMode}
+                    />
+                  </div>
+                  <Footer />
+                </StripeProvider>
               </AuthProvider>
             </MapsProvider>
           </ChakraProvider>

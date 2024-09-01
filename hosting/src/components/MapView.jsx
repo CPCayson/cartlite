@@ -1,113 +1,182 @@
-import { useEffect, useRef, useState } from 'react';
-import PropTypes from 'prop-types';
-import { ChevronLeft, ChevronRight } from 'lucide-react'; // Ensure these are correctly imported
-import { loadGoogleMapsScript } from '../api/googleMapsApi'; // Ensure script is loaded
+import React, { useState, useCallback, useRef } from 'react';
+import { Box, Flex, useMediaQuery , Text} from '@chakra-ui/react';
+import { GoogleMap, Marker, InfoWindow, useJsApiLoader } from '@react-google-maps/api';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../firebase/firebaseConfig';
+//import SearchBar from '../SearchBar/SearchBar';
 
-const MapView = ({ isLeftPanelOpen, isRightPanelOpen, setIsLeftPanelOpen }) => {
-  const streetViewRef = useRef(null);
-  const panoramaRef = useRef(null);
-  const [isLoaded, setIsLoaded] = useState(false); // Local state to check if API is loaded
-  const [error, setError] = useState(null); // State to handle errors
-  const [tilt, setTilt] = useState(0); // Initial tilt
-  const [heading, setHeading] = useState(0); // Initial heading
+const baySaintLouisBounds = {
+  north: 30.3617,
+  south: 30.2817,
+  east: -89.2978,
+  west: -89.4178,
+};
 
-  useEffect(() => {
-    // Load Google Maps script
-    loadGoogleMapsScript(import.meta.env.VITE_GOOGLE_MAPS_API_KEY)
-      .then(() => {
-        setIsLoaded(true); // Set loaded state
-      })
-      .catch((err) => {
-        console.error('Error loading Google Maps script:', err);
-        setError(err);
-      });
+const mapOptions = {
+  tilt: 66,
+  heading: 80,
+  restriction: {
+    latLngBounds: baySaintLouisBounds,
+    strictBounds: true,
+  },
+  mapId: "6ff586e93e18149f", // Use a vector map style with 3D buildings
+  streetViewControl: false, // Hide street view control if not needed
+};
+
+const MapComponent = ({ center, zoom, onBookRide }) => {
+  const { isLoaded } = useJsApiLoader({
+    id: 'google-map-script',
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY, // For Vite
+  });
+
+  const [map, setMap] = useState(null);
+  const [userLocation, setUserLocation] = useState(null);
+  const [destination, setDestination] = useState(null);
+  const [carts, setCarts] = useState([]);
+  const [places, setPlaces] = useState([]);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [isPanelOpen, setIsPanelOpen] = useState(true);
+  const [isMobile] = useMediaQuery("(max-width: 768px)");
+  const markersRef = useRef([]);
+
+  const onMapLoad = useCallback(async (map) => {
+    setMap(map);
+    await loadData(map);
   }, []);
 
-  useEffect(() => {
-    if (isLoaded && streetViewRef.current) {
-      // Initialize Street View
-      panoramaRef.current = new window.google.maps.StreetViewPanorama(streetViewRef.current, {
-        position: { lat: 30.3083, lng: -89.3306 }, // Example coordinates
-        pov: { heading: 0, pitch: 0 }, // Initial point of view
-        zoom: 1,
-      });
+  const loadData = async (map) => {
+    if (!isLoaded) return;
 
-      // Update the map view dynamically when tilt or heading changes
-      panoramaRef.current.addListener('pov_changed', () => {
-        const pov = panoramaRef.current.getPov();
-        setTilt(pov.pitch);
-        setHeading(pov.heading);
-      });
-    }
-  }, [isLoaded]);
+    try {
+      const [cartsSnapshot, placesSnapshot] = await Promise.all([
+        getDocs(collection(db, 'carts')),
+        getDocs(collection(db, 'places'))
+      ]);
 
-  // Function to update tilt and heading dynamically
-  const updatePanoramaView = (newTilt, newHeading) => {
-    if (panoramaRef.current) {
-      panoramaRef.current.setPov({
-        heading: newHeading,
-        pitch: newTilt,
+      const cartsData = cartsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const placesData = placesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      setCarts(cartsData);
+      setPlaces(placesData);
+
+      // Clear existing markers
+      markersRef.current.forEach(marker => marker.setMap(null));
+      markersRef.current = [];
+
+      // Add markers for carts
+      cartsData.forEach(cart => {
+        const marker = new window.google.maps.marker.AdvancedMarkerElement({
+          map: map,
+          position: { lat: cart.cartLoc.latitude, lng: cart.cartLoc.longitude, altitude: 20 }, // Adding altitude for levitation
+          title: cart.cartName,
+          content: createCustomMarker(cart.cartName), // Custom content for markers
+        });
+
+        marker.addListener('click', () => {
+          setSelectedItem(cart);
+          map.panTo({ lat: cart.cartLoc.latitude, lng: cart.cartLoc.longitude });
+        });
+
+        markersRef.current.push(marker);
       });
+      // Add markers for places
+      placesData.forEach(place => {
+        const marker = new window.google.maps.marker.AdvancedMarkerElement({
+          map: map,
+          position: { lat: place.latitude, lng: place.longitude, altitude: 20 }, // Adding altitude for levitation
+          title: place.name,
+          content: createCustomMarker(place.name), // Custom content for markers
+        });
+
+        marker.addListener('click', () => {
+          setSelectedItem(place);
+          map.panTo({ lat: place.latitude, lng: place.longitude });
+        });
+
+        markersRef.current.push(marker);
+      });
+    } catch (error) {
+      console.error('Error loading data:', error);
     }
   };
 
-  // Update map tilt and heading based on slider values
-  useEffect(() => {
-    updatePanoramaView(tilt, heading);
-  }, [tilt, heading]);
+  const createCustomMarker = (name) => {
+    const pin = new window.google.maps.marker.PinElement({
+      background: "#4b2e83",
+      borderColor: "#b7a57a",
+      glyphColor: "#b7a57a",
+      scale: 2.0,
+      glyph: name[0], // First letter of the name
+    });
+
+    return pin.element;
+  };
 
   return (
-    <div className={`relative w-full h-full ${isLeftPanelOpen && isRightPanelOpen ? 'hidden' : ''}`}>
-      {error && (
-        <div className="absolute inset-0 flex items-center justify-center bg-red-100 z-50">
-          <p className="text-red-500">Failed to load the map. Please try again later.</p>
-        </div>
+    <Flex height="100vh" direction="column">
+      {isLoaded ? (
+        <>
+          <Box position="absolute" top="20px" left="50%" transform="translateX(-50%)" zIndex="1" width="90%" maxWidth="600px">
+            {/* <SearchBar
+              map={map}
+              userLocation={userLocation}
+              setUserLocation={setUserLocation}
+              destination={destination}
+              setDestination={setDestination}
+              onBookRide={onBookRide}
+            /> */}
+          </Box>
+          <Flex flex="1" direction="row" mt="80px">
+            <Box flex={1} position="relative">
+              <GoogleMap
+                mapContainerStyle={{ width: '100%', height: '100%' }}
+                center={center}
+                zoom={zoom}
+                heading={80}
+                tilt={120}
+                onLoad={onMapLoad}
+                options={mapOptions}
+              >
+                {userLocation && (
+                  <Marker
+                    position={userLocation}
+                    icon={{
+                      url: '/assets/bar.png',
+                      scaledSize: new window.google.maps.Size(60, 60),
+                    }}
+                  />
+                )}
+                {destination && (
+                  <Marker
+                    position={destination}
+                    icon={{
+                      url: '/assets/carrot.png',
+                      scaledSize: new window.google.maps.Size(60, 60),
+                    }}
+                  />
+                )}
+                {selectedItem && (
+                  <InfoWindow
+                    position={{ lat: selectedItem.latitude || selectedItem.cartLoc.latitude, lng: selectedItem.longitude || selectedItem.cartLoc.longitude }}
+                    onCloseClick={() => setSelectedItem(null)}
+                  >
+                    <Box>
+                      <Text fontWeight="bold">{selectedItem.name || selectedItem.cartName}</Text>
+                      <Text>{selectedItem.type || selectedItem.cartModel}</Text>
+                      {selectedItem.capacity && <Text>Capacity: {selectedItem.capacity}</Text>}
+                    </Box>
+                  </InfoWindow>
+                )}
+              </GoogleMap>
+            </Box>
+          </Flex>
+        </>
+      ) : (
+        <div>Loading Map...</div>
       )}
-
-      {/* Street View container */}
-      <div ref={streetViewRef} className="w-full h-full"></div>
-
-      {/* Tilt and Heading Sliders */}
-      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20 bg-white dark:bg-gray-700 p-2 rounded shadow-md">
-        <div className="flex flex-col items-center">
-          <label htmlFor="tiltSlider" className="text-gray-600 dark:text-gray-300 mb-2">Tilt</label>
-          <input
-            type="range"
-            id="tiltSlider"
-            min="-90"
-            max="90"
-            value={tilt}
-            onChange={(e) => setTilt(parseFloat(e.target.value))}
-            className="w-full mb-4"
-          />
-          <label htmlFor="headingSlider" className="text-gray-600 dark:text-gray-300 mb-2">Heading</label>
-          <input
-            type="range"
-            id="headingSlider"
-            min="0"
-            max="360"
-            value={heading}
-            onChange={(e) => setHeading(parseFloat(e.target.value))}
-            className="w-full"
-          />
-        </div>
-      </div>
-
-      {/* Toggle button for the left panel */}
-      <button
-        onClick={() => setIsLeftPanelOpen(!isLeftPanelOpen)}
-        className="absolute top-1/2 left-0 transform -translate-y-1/2 bg-white dark:bg-gray-700 rounded-r-full p-2 shadow-md"
-      >
-        {isLeftPanelOpen ? <ChevronLeft className="text-gray-600 dark:text-gray-300" /> : <ChevronRight className="text-gray-600 dark:text-gray-300" />}
-      </button>
-    </div>
+    </Flex>
   );
-};
+}
 
-MapView.propTypes = {
-  isLeftPanelOpen: PropTypes.bool.isRequired,
-  isRightPanelOpen: PropTypes.bool.isRequired,
-  setIsLeftPanelOpen: PropTypes.func.isRequired,
-};
 
-export default MapView;
+export default React.memo(MapComponent);

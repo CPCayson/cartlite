@@ -1,6 +1,6 @@
-import React from 'react';
+import PropTypes from 'prop-types';
 
-const GuestContainer = ({ activeView, chatMessages, chatInput, setChatInput, sendMessage, cancelAction }) => (
+const ActiveContainer = ({ activeView, chatMessages, chatInput, setChatInput, sendMessage, cancelAction }) => (
   <div className="bg-white dark:bg-gray-700 p-4 rounded-lg shadow-md mb-6">
     <h3 className="text-lg font-semibold mb-2 text-gray-800 dark:text-white">Guest Pickup & Dropoff</h3>
     <p className="text-gray-600 dark:text-gray-300">
@@ -29,4 +29,17 @@ const GuestContainer = ({ activeView, chatMessages, chatInput, setChatInput, sen
   </div>
 );
 
-export default GuestContainer;
+ActiveContainer.propTypes = {
+  activeView: PropTypes.string,
+  chatMessages: PropTypes.arrayOf(PropTypes.shape({
+    sender: PropTypes.string.isRequired,
+    text: PropTypes.string.isRequired
+  })).isRequired,
+  chatInput: PropTypes.string.isRequired,
+  setChatInput: PropTypes.func.isRequired,
+  sendMessage: PropTypes.func.isRequired,
+  cancelAction: PropTypes.func.isRequired,
+};
+
+
+export default ActiveContainer;

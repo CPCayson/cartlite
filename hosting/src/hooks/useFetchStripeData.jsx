@@ -2,15 +2,16 @@
 import { useState, useEffect } from 'react';
 import stripeApi from '../api/stripeApi';
 
-export const useFetchStripeDataForConnectedAccount = (accountId) => {
+export const useFetchStripeData = (endpoint, params = {}) => {
   const [stripeData, setStripeData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchStripeData = async () => {
+    const fetchData = async () => {
+      setLoading(true);
       try {
-        const response = await stripeApi.get(`/stripeApi/fetch-stripe-data/${accountId}`);
+        const response = await stripeApi.get(endpoint, { params });
         setStripeData(response.data);
       } catch (error) {
         setError(error);
@@ -18,8 +19,8 @@ export const useFetchStripeDataForConnectedAccount = (accountId) => {
         setLoading(false);
       }
     };
-    fetchStripeData();
-  }, [accountId]);
+    fetchData();
+  }, [endpoint, params]);
 
   return { stripeData, loading, error };
 };

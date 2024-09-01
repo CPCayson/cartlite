@@ -1,66 +1,96 @@
-import  { useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
+import { addDoc, collection, getFirestore, orderBy, query, onSnapshot, serverTimestamp } from 'firebase/firestore';
+import { auth } from '../firebase/firebaseConfig';
 
-const ChatComponent = ({ chatMessages, chatInput, setChatInput, sendMessage }) => {
+const ChatComponent = ({ chatId, currentUser, otherUser, isHost }) => {
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState('');
   const messagesEndRef = useRef(null);
+  const firestoreDb = getFirestore();
 
-  // Auto-scroll to the latest message
+  useEffect(() => {
+    if (!chatId) return;
+
+    const messagesRef = collection(firestoreDb, 'chats', chatId, 'messages');
+    const q = query(messagesRef, orderBy('timestamp', 'asc'));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetchedMessages = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setMessages(fetchedMessages);
+    });
+
+    return () => unsubscribe();
+  }, [chatId, firestoreDb]);
+
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [chatMessages]);
+  }, [messages]);
+
+  const sendMessage = async (event) => {
+    event.preventDefault();
+    if (!input.trim()) return;
+
+    try {
+      await addDoc(collection(firestoreDb, 'chats', chatId, 'messages'), {
+        text: input.trim(),
+        sender: currentUser.uid,
+        timestamp: serverTimestamp(),
+        read: false,
+      });
+      setInput('');
+    } catch (error) {
+      console.error('Error sending message:', error);
+    }
+  };
 
   return (
-    <div className="mt-4 p-4 border rounded-lg shadow-md bg-white dark:bg-gray-800">
-      <h3 className="text-lg font-semibold mb-2 text-gray-800 dark:text-white">Chat with Guest</h3>
-      
-      {/* Chat Messages Display */}
-      <div className="bg-gray-100 dark:bg-gray-700 p-3 h-48 overflow-y-scroll mb-3 rounded-lg">
-        {chatMessages.map((msg, index) => (
-          <div
-            key={index}
-            className={`mb-2 p-2 rounded-lg ${msg.sender === 'host' ? 'bg-blue-500 text-white text-right' : 'bg-green-500 text-white text-left'}`}
+    <div className="max-w-lg mx-auto p-4 bg-gray-50 dark:bg-gray-900 rounded shadow-lg">
+      <h2 className="text-xl font-bold mb-4 text-center text-gray-800 dark:text-white">
+        {isHost ? 'Chat with Guest' : 'Chat with Host'}
+      </h2>
+      <div className="bg-gray-100 dark:bg-gray-600 p-2 h-32 overflow-y-scroll mb-2 rounded">
+        {messages.map((msg) => (
+          <p
+            key={msg.id}
+            className={`${
+              msg.sender === currentUser.uid ? 'text-right' : 'text-left'
+            } mb-1`}
           >
             {msg.text}
-          </div>
+          </p>
         ))}
-        <div ref={messagesEndRef} /> {/* Anchor to auto-scroll */}
+        <div ref={messagesEndRef} />
       </div>
-
-      {/* Chat Input Field */}
-      <div className="flex items-center">
-        <input 
-          type="text" 
-          value={chatInput}
-          onChange={(e) => setChatInput(e.target.value)}
-          className="flex-grow rounded-md border border-gray-300 dark:border-gray-600 shadow-sm bg-white dark:bg-gray-800 text-gray-800 dark:text-white p-2" 
-          placeholder="Type a message..." 
+      <form onSubmit={sendMessage}>
+        <input
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm bg-white dark:bg-gray-800 text-gray-800 dark:text-white"
+          placeholder="Type a message..."
         />
-        
-        {/* Send Button */}
-        <button 
-          className="bg-green-600 text-white py-2 px-4 rounded ml-2 hover:bg-green-700 transition duration-200"
-          onClick={sendMessage}
-          disabled={!chatInput.trim()} // Disable button when input is empty
+        <button
+          type="submit"
+          className="bg-green-500 text-white py-2 px-4 rounded mt-2"
         >
           Send
         </button>
-      </div>
+      </form>
     </div>
   );
 };
 
 ChatComponent.propTypes = {
-  chatMessages: PropTypes.arrayOf(
-    PropTypes.shape({
-      sender: PropTypes.string.isRequired,
-      text: PropTypes.string.isRequired,
-    })
-  ).isRequired,
-  chatInput: PropTypes.string.isRequired,
-  setChatInput: PropTypes.func.isRequired,
-  sendMessage: PropTypes.func.isRequired,
+  chatId: PropTypes.string.isRequired,
+  currentUser: PropTypes.object.isRequired,
+  otherUser: PropTypes.string.isRequired,
+  isHost: PropTypes.bool.isRequired,
 };
 
 export default ChatComponent;

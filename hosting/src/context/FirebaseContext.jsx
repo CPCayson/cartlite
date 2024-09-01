@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { auth, db } from '../firebase/firebaseConfig'; 
 
@@ -29,8 +29,11 @@ export const FirebaseProvider = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
+  // Use useMemo to memoize the context value
+  const firebaseContextValue = useMemo(() => ({ user, db }), [user, db]);
+
   return (
-    <FirebaseContext.Provider value={{ user, db }}>
+    <FirebaseContext.Provider value={firebaseContextValue}>
       {children}
     </FirebaseContext.Provider>
   );

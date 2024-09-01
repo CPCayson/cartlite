@@ -1,10 +1,6 @@
 import { db } from '../firebase/firebaseConfig';
 import { collection, doc, setDoc, getDoc, updateDoc, query, where, onSnapshot, GeoPoint, serverTimestamp } from 'firebase/firestore';
 
-// need these getCurrentRides, getPendingRequests acceptRide, rejectRide, uploadImage
-
-
-
 // Function to create a new ride request
 export async function createRideRequest(paymentIntent, rideDetails) {
   console.log('firebaseAPI: Creating a new ride request with details:', rideDetails);
@@ -97,6 +93,3 @@ export function listenToRideRequests(callback) {
 
   return unsubscribe;
 }
-
-// Add more Firebase API functions as needed...
-

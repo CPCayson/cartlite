@@ -1,19 +1,19 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import { useAuth } from './AuthContext'; // Import the useAuth hook from AuthContext
-import { db } from '../firebase/firebaseConfig'; // Import Firestore from Firebase config
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { toast } from 'react-toastify'; // Import react-toastify for notifications
+// StripeContext.jsx
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useAuth } from './AuthContext';
+import { updateStripeStatusInDb, createAccountLink } from '../api/stripeApi';
+import { db } from '../firebase/firebaseConfig';
+import { doc, getDoc } from 'firebase/firestore';
+import { toast } from 'react-toastify';
 import PropTypes from 'prop-types';
 
-// Create a Context for Stripe
+// Create a context for Stripe-related data and functions
 const StripeContext = createContext();
 
-// Custom hook to use the Stripe context
 export const useStripe = () => useContext(StripeContext);
 
-// StripeProvider component to provide Stripe-related state and functions
 export const StripeProvider = ({ children }) => {
-  const { user } = useAuth(); // Correctly use destructured user from useAuth
+  const { user } = useAuth();
   const [stripeAccountId, setStripeAccountId] = useState(null);
   const [stripeAccountStatus, setStripeAccountStatus] = useState('not_created');
 
@@ -29,7 +29,7 @@ export const StripeProvider = ({ children }) => {
             setStripeAccountStatus(userData.stripeAccountStatus || 'not_created');
           } else {
             console.error('No user document found');
-            toast.error('No user document found');
+            toast.error('No user document found. Please complete the profile first.');
           }
         } catch (error) {
           console.error('Error fetching Stripe data:', error);
@@ -39,14 +39,12 @@ export const StripeProvider = ({ children }) => {
     };
 
     fetchStripeData();
-  }, [user]); // Run this effect whenever user changes
+  }, [user]);
 
   const updateStripeStatus = async (status) => {
     if (user?.uid) {
       try {
-        await updateDoc(doc(db, 'users', user.uid), {
-          stripeAccountStatus: status,
-        });
+        await updateStripeStatusInDb(user.uid, status);
         setStripeAccountStatus(status);
         toast.success('Stripe status updated successfully.');
       } catch (error) {
