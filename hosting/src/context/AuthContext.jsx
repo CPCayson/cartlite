@@ -1,5 +1,6 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import { auth } from '../firebase/firebaseConfig'; // Ensure correct import of auth from firebaseConfig
+// AuthContext.jsx
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { auth } from '../firebase/firebaseConfig';
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -8,16 +9,18 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
 } from 'firebase/auth';
-import { setDoc, doc } from 'firebase/firestore';
-import { db } from '../firebase/firebaseConfig'; // Import Firestore for profile management
 import PropTypes from 'prop-types';
 
-// Create a Context for Auth
+// Create a context for the authentication
 const AuthContext = createContext();
 
 // Custom hook to use the AuthContext
 export const useAuth = () => {
-  return useContext(AuthContext);
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 };
 
 // AuthProvider component to provide auth state and functions to the rest of the app
@@ -30,16 +33,11 @@ export const AuthProvider = ({ children }) => {
     console.log('AuthProvider: Initializing authentication listener');
 
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if (currentUser) {
-        console.log('AuthProvider: User authenticated', currentUser);
-        setUser(currentUser);
-      } else {
-        console.log('AuthProvider: No user authenticated');
-        setUser(null);
-      }
+      setUser(currentUser);
       setLoading(false);
     });
 
+    // Cleanup subscription on unmount
     return () => {
       console.log('AuthProvider: Cleaning up authentication listener');
       unsubscribe();
@@ -51,29 +49,34 @@ export const AuthProvider = ({ children }) => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       setUser(userCredential.user);
-      setError(null); // Reset error on successful login
+      setError(null); // Clear any previous errors
     } catch (err) {
-      console.error('Error logging in:', err);
+      console.error('Error during login:', err);
       setError(err.message);
     }
   };
 
   // Function to register a new user
-  const register = async (email, password, additionalData) => {
+  const register = async (email, password) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const newUser = userCredential.user;
-
-      // Create user document in Firestore
-      await setDoc(doc(db, 'users', newUser.uid), {
-        email: newUser.email,
-        ...additionalData,
-      });
-
-      setUser(newUser);
-      setError(null); // Reset error on successful registration
+      setUser(userCredential.user);
+      setError(null); // Clear any previous errors
     } catch (err) {
-      console.error('Error registering user:', err);
+      console.error('Error during registration:', err);
+      setError(err.message);
+    }
+  };
+
+  // Function for Google sign-in
+  const googleSignIn = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      setUser(result.user);
+      setError(null); // Clear any previous errors
+    } catch (err) {
+      console.error('Error during Google sign-in:', err);
       setError(err.message);
     }
   };
@@ -83,38 +86,26 @@ export const AuthProvider = ({ children }) => {
     try {
       await signOut(auth);
       setUser(null);
+      setError(null); // Clear any previous errors
     } catch (err) {
-      console.error('Error logging out:', err);
+      console.error('Error during logout:', err);
       setError(err.message);
     }
   };
 
-  // Function to sign in with Google
-  const googleSignIn = async () => {
-    const provider = new GoogleAuthProvider();
-    try {
-      const result = await signInWithPopup(auth, provider);
-      const newUser = result.user;
-
-      // Merge user document in Firestore
-      await setDoc(
-        doc(db, 'users', newUser.uid),
-        {
-          email: newUser.email,
-        },
-        { merge: true }
-      );
-
-      setUser(newUser);
-      setError(null); // Reset error on successful Google sign-in
-    } catch (err) {
-      console.error('Error with Google sign-in:', err);
-      setError(err.message);
-    }
+  // Value to provide to consuming components
+  const contextValue = {
+    user,
+    loading,
+    error,
+    login,
+    register,
+    googleSignIn,
+    logout,
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, error, login, register, logout, googleSignIn }}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );

@@ -55,4 +55,4 @@ const useFirebase = () => {
   return context;
 };
 
-export default useFirebase;
+export {useFirebase} ;

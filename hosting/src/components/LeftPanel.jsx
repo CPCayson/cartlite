@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { collection, query, where, orderBy, limit, getDocs, startAfter } from 'firebase/firestore';
+import { db } from '../firebase/firebaseConfig';
 
 const LeftPanel = ({ 
   isOpen, 
@@ -22,29 +24,108 @@ const LeftPanel = ({
 
   const businessCategories = [
     { name: 'all food', color: 'bg-red-500' },
-    { name: 'bars', color: 'bg-purple-500' },
-    { name: 'events', color: 'bg-green-500' },
-    { name: 'deliveries', color: 'bg-yellow-500' },
+    { name: 'Store', color: 'bg-purple-500' },
+    { name: 'Food', color: 'bg-green-500' },
+    { name: 'Bar', color: 'bg-yellow-500' },
   ];
 
-  const sampleBusinesses = {
-    'all food': [
-      { id: 1, name: "Joe's Coffee", rating: 4.5, type: "Café" },
-      { id: 2, name: "Pizza Palace", rating: 4.2, type: "Restaurant" },
-      { id: 3, name: "Sushi Delight", rating: 4.8, type: "Japanese" },
-    ],
-    'bars': [
-      { id: 4, name: "The Tipsy Crow", rating: 4.3, type: "Pub" },
-      { id: 5, name: "Moonlight Lounge", rating: 4.6, type: "Cocktail Bar" },
-    ],
-    'events': [
-      { id: 6, name: "City Music Festival", rating: 4.7, type: "Concert" },
-      { id: 7, name: "Art in the Park", rating: 4.4, type: "Exhibition" },
-    ],
-    'deliveries': [
-      { id: 8, name: "Quick Bites", rating: 4.1, type: "Fast Food Delivery" },
-      { id: 9, name: "Green Grocers", rating: 4.5, type: "Grocery Delivery" },
-    ],
+  const [businesses, setBusinesses] = useState([]);
+  const [lastDoc, setLastDoc] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    fetchBusinesses();
+  }, [activeCategory]);
+
+  useEffect(() => {
+    filterBusinesses();
+  }, [searchTerm]);
+
+  const fetchBusinesses = async () => {
+    setLoading(true);
+    let businessQuery;
+
+    if (activeCategory === 'all food') {
+      businessQuery = query(
+        collection(db, 'places'),
+        orderBy('name'),
+        limit(15)
+      );
+    } else {
+      businessQuery = query(
+        collection(db, 'places'),
+        where('category', '==', activeCategory),
+        orderBy('name'),
+        limit(15)
+      );
+    }
+
+    try {
+      const querySnapshot = await getDocs(businessQuery);
+      const fetchedBusinesses = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      setBusinesses(fetchedBusinesses);
+      setLastDoc(querySnapshot.docs[querySnapshot.docs.length - 1]);
+      setHasMore(querySnapshot.docs.length === 15);
+    } catch (error) {
+      console.error('Error fetching businesses:', error);
+    }
+
+    setLoading(false);
+  };
+
+  const filterBusinesses = () => {
+    if (!searchTerm) return;
+
+    const filtered = businesses.filter(business =>
+      business.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setBusinesses(filtered);
+  };
+
+  const loadMoreBusinesses = async () => {
+    if (!lastDoc || !hasMore || loading) return;
+
+    setLoading(true);
+    let businessQuery;
+
+    if (activeCategory === 'all food') {
+      businessQuery = query(
+        collection(db, 'places'),
+        orderBy('name'),
+        startAfter(lastDoc),
+        limit(15)
+      );
+    } else {
+      businessQuery = query(
+        collection(db, 'places'),
+        where('category', '==', activeCategory),
+        orderBy('name'),
+        startAfter(lastDoc),
+        limit(15)
+      );
+    }
+
+    try {
+      const querySnapshot = await getDocs(businessQuery);
+      const fetchedBusinesses = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      setBusinesses((prev) => [...prev, ...fetchedBusinesses]);
+      setLastDoc(querySnapshot.docs[querySnapshot.docs.length - 1]);
+      setHasMore(querySnapshot.docs.length === 15);
+    } catch (error) {
+      console.error('Error fetching more businesses:', error);
+    }
+
+    setLoading(false);
   };
 
   const handleAcceptClick = (ride) => {
@@ -53,15 +134,16 @@ const LeftPanel = ({
   };
 
   const renderItems = () => {
-    const items = sampleBusinesses[activeCategory] || [];
-    return items.map(item => (
+    return businesses.map((item) => (
       <div 
         key={item.id} 
         className={`bg-white dark:bg-gray-700 p-4 rounded-lg shadow ${viewType === 'grid' ? 'w-full sm:w-1/2 md:w-1/3' : 'w-full'} cursor-pointer mb-4`} 
         onClick={() => handleSelectItem(item)}
       >
         <h3 className="font-bold text-gray-800 dark:text-white">{item.name}</h3>
-        <p className="text-sm text-gray-600 dark:text-gray-300">{item.type}</p>
+        <p className="text-sm text-gray-600 dark:text-gray-300">{item.type_of_place}</p>
+        <p className="text-xs text-gray-600 dark:text-gray-400">{item.rating ? `Rating: ${item.rating}` : 'No rating'}</p>
+        <p className="text-xs text-gray-600 dark:text-gray-400">{item.product_services}</p>
         <div className="flex mt-2">{renderStars(item.rating)}</div>
       </div>
     ));
@@ -105,6 +187,21 @@ const LeftPanel = ({
         ) : (
           <>
             <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-white">Businesses</h2>
+            <div className="flex items-center mb-4">
+              <input 
+                type="text" 
+                className="px-3 py-2 border rounded w-full" 
+                placeholder="Search by name..." 
+                value={searchTerm} 
+                onChange={(e) => setSearchTerm(e.target.value)} 
+              />
+              <button 
+                className="ml-2 px-3 py-2 bg-blue-500 text-white rounded"
+                onClick={() => setViewType(viewType === 'grid' ? 'list' : 'grid')}
+              >
+                {viewType === 'grid' ? 'List View' : 'Grid View'}
+              </button>
+            </div>
             <div className="flex flex-wrap justify-start mb-4">
               {businessCategories.map((category) => (
                 <button
@@ -119,6 +216,15 @@ const LeftPanel = ({
             <div className={`${viewType === 'grid' ? 'flex flex-wrap -mx-2' : ''}`}>
               {renderItems()}
             </div>
+            {hasMore && !loading && (
+              <button 
+                onClick={loadMoreBusinesses} 
+                className="bg-blue-500 text-white px-4 py-2 rounded mt-4 w-full"
+              >
+                Load More
+              </button>
+            )}
+            {loading && <p className="text-center mt-4">Loading...</p>}
           </>
         )}
       </div>
@@ -131,7 +237,6 @@ const LeftPanel = ({
     </div>
   );
 };
-
 LeftPanel.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   setIsOpen: PropTypes.func.isRequired,

@@ -25,3 +25,4 @@ export const loadGoogleMapsScript = (apiKey) => {
 
   return loadScriptPromise;
 };
+

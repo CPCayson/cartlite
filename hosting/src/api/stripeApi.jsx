@@ -67,6 +67,8 @@ export const updateUserStripeAccount = async (userId, accountData) => {
     throw new Error('Failed to update user Stripe account: ' + (error.response?.data?.error || error.message))
   }
 }
+
+
 // Function to create a new Stripe customer
 export const createCustomer = async (customerData) => {
   try {
@@ -248,6 +250,53 @@ export const handleRequestAction = async (request, action) => {
   } catch (error) {
     console.error(`Error ${action === 'accept' ? 'accepting' : 'rejecting'} ride request:`, error);
     throw error;
+  }
+};
+export const handleCreateStripeOnboarding = async (email) => {
+  try {
+    const response = await axios.post('/api/create-stripe-account-link', { email });
+    window.location.href = response.data.url; // Redirect to Stripe onboarding
+  } catch (error) {
+    console.error('Error creating Stripe onboarding link:', error);
+    throw new Error('Error creating Stripe onboarding link: ' + error.message);
+  }
+};
+
+
+
+export const handleCreateCheckoutSession = async (amount, customerEmail) => {
+  try {
+    const response = await axios.post('/api/create-checkout-session', {
+      amount: parseInt(amount) * 100, // Convert to cents
+      customerEmail,
+    });
+    window.location.href = response.data.url; // Redirect to Stripe Checkout
+  } catch (error) {
+    console.error('Error creating checkout session:', error);
+    throw new Error('Error creating checkout session: ' + error.message);
+  }
+};
+
+export const handleCapturePaymentIntent = async (paymentIntentId, customerEmail) => {
+  try {
+    const response = await axios.post('/api/capture-payment-intent', {
+      paymentIntentId,
+      customerEmail,
+    });
+    return response.data; // Return the captured payment intent data
+  } catch (error) {
+    console.error('Error capturing payment intent:', error);
+    throw new Error('Error capturing payment intent: ' + error.message);
+  }
+};
+
+export const handleCancelPaymentIntent = async (paymentIntentId) => {
+  try {
+    const response = await axios.post('/api/cancel-payment-intent', { paymentIntentId });
+    return response.data; // Return the canceled payment intent data
+  } catch (error) {
+    console.error('Error canceling payment intent:', error);
+    throw new Error('Error canceling payment intent: ' + error.message);
   }
 };
 

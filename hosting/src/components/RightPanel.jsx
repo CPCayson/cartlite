@@ -1,58 +1,33 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import PropTypes from 'prop-types';
-import { ArrowLeft } from 'lucide-react';
-import { useAuth } from '../context/AuthContext'; // Ensure this import is correct
-import { Button, Input, FormControl, FormLabel, Spinner, Box } from '@chakra-ui/react'; // Using Chakra UI components for consistency
-import { useStripe } from '../hooks/useStripe'; // Custom Stripe hook
-import TabbedSettingsForm from './TabbedSettingsForm'; // Import the TabbedSettingsForm component
+import { Button, Spinner, Input, FormControl, FormLabel, Select, Box, Text } from '@chakra-ui/react';
+import useAuthorization from '../hooks/useAuthorization';
+import TabbedSettingsForm from './Forms/TabbedSettingsForm';
 
-const RightPanel = ({ isOpen, setIsOpen, selectedItem, appMode, setAppMode }) => {
-  const { user, loading: authLoading, login, register, logout, error: authError } = useAuth(); // Use custom auth hook
-  const [isOnboarding, setIsOnboarding] = useState(false); // Toggle between sign-in and onboarding forms
-  const [email, setEmail] = useState(''); // Email state
-  const [password, setPassword] = useState(''); // Password state
-  const [formError, setFormError] = useState(''); // Local error handling state
+const RightPanel = ({ isOpen, setIsOpen, selectedItem, appMode, adjustHeightForBlueMoon }) => {
+  const {
+    user,
+    authLoading,
+    formError,
+    email,
+    password,
+    phoneNumber,
+    isOnboarding,
+    authMethod,
+    handleToggleForm,
+    handleAuthAction,
+    handleLogout,
+    setEmail,
+    setPassword,
+    setPhoneNumber,
+    setAuthMethod,
+    redirecting,
+    redirectToStripeOnboarding,
+  } = useAuthorization(); // Use the custom hook for authentication and onboarding logic
 
-  // Custom Stripe hook to manage onboarding and status checks
-  const { stripeAccountStatus, loading: stripeLoading, error: stripeError } = useStripe(user);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (authError) setFormError(authError);
-  }, [authError]);
-
-  useEffect(() => {
-    if (stripeError) setFormError(stripeError);
-  }, [stripeError]);
-
-  const handleToggleForm = () => {
-    setIsOnboarding((prev) => !prev); // Toggle form state
-  };
-
-  const handleAuthAction = async () => {
-    setFormError(''); // Reset any previous errors
-    try {
-      if (isOnboarding) {
-        await register(email, password, { stripeAccountStatus: 'not_created' }); // Register with initial Stripe status
-      } else {
-        await login(email, password); // Log in existing user
-      }
-    } catch (error) {
-      setFormError(error.message);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await logout(); // Call logout function from AuthContext
-      setAppMode('rabbit'); // Switch to rabbit mode upon logout
-      setIsOpen(false); // Close the right panel
-    } catch (error) {
-      console.error('Error logging out:', error);
-      setFormError('Failed to log out. Please try again.');
-    }
-  };
-
-  if (authLoading || stripeLoading) {
+  if (authLoading || redirecting || loading) {
     return (
       <div className="flex justify-center items-center h-full">
         <Spinner size="lg" />
@@ -61,98 +36,81 @@ const RightPanel = ({ isOpen, setIsOpen, selectedItem, appMode, setAppMode }) =>
   }
 
   return (
-    <div className={`bg-white dark:bg-gray-800 shadow-lg transition-all duration-300 ${isOpen ? 'w-1/2' : 'w-0'} overflow-hidden`}>
-      {isOpen && !selectedItem && !user && (
-        <Box
-          fontFamily="Arial, sans-serif"
-          maxW="350px"
-          mx="auto"
-          p="20px"
-          boxShadow="0 4px 6px rgba(0, 0, 0, 0.1)"
-          borderRadius="8px"
-          bg="white"
-        >
-          <h2 style={{ marginTop: 0 }}>{isOnboarding ? "Complete Your Profile" : "Sign In"}</h2>
-          <p style={{ color: '#666' }}>
-            {isOnboarding ? "Tell us more about yourself" : "Choose a sign-in method"}
-          </p>
-
-          <FormControl mb={4}>
-            <FormLabel>Email</FormLabel>
-            <Input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email"
-            />
-          </FormControl>
-          <FormControl mb={4}>
-            <FormLabel>Password</FormLabel>
-            <Input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
-            />
-          </FormControl>
-
-          {formError && <p style={{ color: 'red' }}>{formError}</p>}
-
-          <Button colorScheme="teal" width="full" onClick={handleAuthAction}>
-            {isOnboarding ? 'Sign Up' : 'Sign In'}
-          </Button>
-
-          <Button variant="link" colorScheme="blue" onClick={handleToggleForm} mt={2}>
-            {isOnboarding ? 'Already have an account? Sign In' : 'Need an account? Sign Up'}
-          </Button>
-        </Box>
-      )}
-
-      {isOpen && appMode === 'host' && user && (
+    <div style={{ width: isOpen ? '50%' : '0', height: adjustHeightForBlueMoon ? '70%' : '100%', transition: 'all 0.3s ease-in-out', overflow: 'hidden', backgroundColor: 'white', boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)' }}>
+      {isOpen && (
         <div className="p-4">
-          <button onClick={() => setIsOpen(false)} className="mb-4 flex items-center text-blue-500">
-            <ArrowLeft className="mr-2" /> Back to List
-          </button>
+          <h2 className="text-xl font-bold">{selectedItem ? selectedItem.name : 'Details'}</h2>
+          {selectedItem && <p>{selectedItem.description}</p>}
 
-          {/* Integrate TabbedSettingsForm for driver settings */}
-          <TabbedSettingsForm />
-
-          {/* Logout button to switch back to rabbit mode and log out */}
-          <Button colorScheme="red" width="full" onClick={handleLogout} mt={4}>
-            Logout
-          </Button>
-        </div>
-      )}
-
-      {isOpen && selectedItem && (
-        <div className="p-4">
-          <button onClick={() => setIsOpen(false)} className="mb-4 flex items-center text-blue-500">
-            <ArrowLeft className="mr-2" /> Back to List
-          </button>
-          <div>
-            <h2 className="text-2xl font-bold mb-2 text-gray-800 dark:text-white">{selectedItem.name}</h2>
-            <p className="text-gray-600 dark:text-gray-300 mb-2">{selectedItem.type}</p>
-            {appMode === 'host' && <p className="text-blue-500 mb-2">ETA: {selectedItem.eta}</p>}
-            <div className="flex mb-4">
-              {Array(5)
-                .fill(0)
-                .map((_, i) => (
-                  <svg
-                    key={i}
-                    className={`w-4 h-4 ${i < selectedItem.rating ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}`}
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                  </svg>
-                ))}
-            </div>
-            {appMode === 'host' && (
-              <Button colorScheme="teal" width="full">
-                Book Ride
+          {/* Conditional rendering based on appMode */}
+          {appMode === 'host' ? (
+            <>
+              {/* Host Settings Form */}
+              <TabbedSettingsForm onSaveUserData={handleSaveUserData} />
+              {/* Logout Button */}
+              <Button colorScheme="red" onClick={handleLogout} className="mt-4">
+                Logout
               </Button>
-            )}
-          </div>
+
+              
+            </>
+          ) : (
+            <>
+              {/* Onboarding and Authentication Form */}
+              <Box>
+                <FormControl id="auth-method">
+                  <FormLabel>Authentication Method</FormLabel>
+                  <Select value={authMethod} onChange={(e) => setAuthMethod(e.target.value)}>
+                    <option value="email">Email</option>
+                    <option value="phone">Phone</option>
+                    {/* Add other methods like Google, Facebook, etc. if needed */}
+                  </Select>
+                </FormControl>
+
+                {authMethod === 'email' && (
+                  <>
+                    <FormControl id="email" mt={4}>
+                      <FormLabel>Email</FormLabel>
+                      <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                    </FormControl>
+                    <FormControl id="password" mt={4}>
+                      <FormLabel>Password</FormLabel>
+                      <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+                    </FormControl>
+                  </>
+                )}
+
+                {authMethod === 'phone' && (
+                  <>
+                    <FormControl id="phone-number" mt={4}>
+                      <FormLabel>Phone Number</FormLabel>
+                      <Input type="tel" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} />
+                    </FormControl>
+                    <div id="recaptcha-container"></div> {/* Recaptcha for phone authentication */}
+                  </>
+                )}
+
+                {formError && <Text color="red.500">{formError}</Text>}
+
+                <Button mt={4} colorScheme="blue" onClick={handleAuthAction}>
+                  {isOnboarding ? 'Register' : 'Login'}
+                </Button>
+
+                <Button variant="link" mt={2} onClick={handleToggleForm}>
+                  {isOnboarding ? 'Already have an account? Login' : 'New user? Register here'}
+                </Button>
+
+                {/* Onboarding Button */}
+                {user && (
+                  <Button mt={4} colorScheme="teal" onClick={() => redirectToStripeOnboarding(user)}>
+                    Start Stripe Onboarding
+                  </Button>
+                )}
+              </Box>
+            </>
+          )}
+
+          <Button onClick={() => setIsOpen(false)} mt={4}>Close</Button>
         </div>
       )}
     </div>
@@ -164,12 +122,10 @@ RightPanel.propTypes = {
   setIsOpen: PropTypes.func.isRequired,
   selectedItem: PropTypes.shape({
     name: PropTypes.string,
-    type: PropTypes.string,
-    eta: PropTypes.string,
-    rating: PropTypes.number,
+    description: PropTypes.string,
   }),
   appMode: PropTypes.oneOf(['rabbit', 'host']).isRequired,
-  setAppMode: PropTypes.func.isRequired, // Ensure this is passed to handle mode switch
+  adjustHeightForBlueMoon: PropTypes.bool,
 };
 
 export default RightPanel;

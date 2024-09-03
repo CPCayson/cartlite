@@ -7,8 +7,15 @@ export default defineConfig({
     include: ['tailwindcss']
   },
   server: {
-    port: 5000, // Set a fixed port
-
-    strictPort: true // Prevents Vite from switching to a different port if 5000 is in use
+    port: 3000, // Use a different port for Vite's dev server
+    strictPort: true, // Prevents Vite from switching to a different port if 3000 is in use
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000', // Your backend server URL
+        changeOrigin: true,
+        secure: false, // Set to true if you're using HTTPS for your backend
+      },
+    },
   }
 })
+
