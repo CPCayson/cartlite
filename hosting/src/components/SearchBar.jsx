@@ -1,44 +1,58 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { MapPin, Clock, Search } from 'lucide-react';
 import { Input, Button, Select, Box, Flex } from '@chakra-ui/react';
+import { loadGoogleMapsScript } from '../api/googleMapsApi';
 
-const SearchBar = ({ userEmail, paymentIntentId, paymentIntentStatus, onPaymentIntentUpdate, onBookRide }) => {
+const SearchBar = ({
+  paymentIntentId,
+  paymentIntentStatus,
+  onPaymentIntentUpdate,
+  onBookRide,
+  onCreateCheckoutSession,
+  onDestinationSelect,
+  onPickupSelect
+}) => {
   const [step, setStep] = useState(0);
   const [destination, setDestination] = useState('');
-  const [pickupLocation, setPickupLocation] = useState('Current Location');
-  const [countdownTime, setCountdownTime] = useState(null);
-  const [bookingAmount] = useState(Math.floor(Math.random() * 10000) + 500); // Random amount between 500 and 10,500 cents
+  const [pickupLocation, setPickupLocation] = useState('');
+  const [countdownTime, setCountdownTime] = useState('Now');
+  const [bookingAmount, setBookingAmount] = useState(0);
   const destinationInputRef = useRef(null);
   const pickupInputRef = useRef(null);
+  const [destinationCoords, setDestinationCoords] = useState(null);
+  const [pickupCoords, setPickupCoords] = useState(null);
+  const [isLoaded, setIsLoaded] = useState(false);
 
+  // Load Google Maps API
   useEffect(() => {
-    const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyCOkJd62Hu9iEVlJ_LIIrakwbkm19cg8CU&libraries=places`;
-    script.async = true;
-    script.defer = true;
-    script.onload = initAutocomplete;
-    document.head.appendChild(script);
-
-    return () => {
-      document.head.removeChild(script);
-    };
+    loadGoogleMapsScript(import.meta.env.VITE_GOOGLE_MAPS_API_KEY)
+      .then(() => {
+        setIsLoaded(true);
+      })
+      .catch((error) => {
+        console.error('Error loading Google Maps script:', error);
+      });
   }, []);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      if (typeof updateCountdown === 'function') {
-        updateCountdown();
-      }
-    }, 1000);
+    if (isLoaded) {
+      const cleanup = initAutocomplete();
+      return cleanup;
+    }
+  }, [isLoaded]);
 
-    return () => clearInterval(timer);
-  }, [countdownTime]);
+  useEffect(() => {
+    if (pickupCoords && destinationCoords) {
+      updateBookingAmount();
+    }
+  }, [pickupCoords, destinationCoords]);
 
+  // Initialize Google Maps autocomplete
   const initAutocomplete = () => {
     if (!window.google || !window.google.maps || !window.google.maps.places) {
       console.error('Google Maps API not loaded');
-      return;
+      return () => {};
     }
 
     const bounds = new window.google.maps.LatLngBounds(
@@ -53,185 +67,140 @@ const SearchBar = ({ userEmail, paymentIntentId, paymentIntentStatus, onPaymentI
     };
 
     const destinationAutocomplete = new window.google.maps.places.Autocomplete(destinationInputRef.current, options);
-    destinationAutocomplete.addListener('place_changed', () => {
+    const pickupAutocomplete = new window.google.maps.places.Autocomplete(pickupInputRef.current, options);
+
+    const destinationListener = destinationAutocomplete.addListener('place_changed', () => {
       const place = destinationAutocomplete.getPlace();
       if (place.geometry) {
         setDestination(place.formatted_address);
-        setStep(1); // Move to the next step
+        setDestinationCoords(place.geometry.location);
+        onDestinationSelect(place.formatted_address);
+        setStep(1);
       }
     });
 
-    const pickupAutocomplete = new window.google.maps.places.Autocomplete(pickupInputRef.current, options);
-    pickupAutocomplete.addListener('place_changed', () => {
+    const pickupListener = pickupAutocomplete.addListener('place_changed', () => {
       const place = pickupAutocomplete.getPlace();
       if (place.geometry) {
         setPickupLocation(place.formatted_address);
+        setPickupCoords(place.geometry.location);
+        onPickupSelect(place.formatted_address);
+        setStep(2);
       }
     });
-  };
 
-  const updateCountdown = () => {
-    // Implement your countdown logic here
-  };
-
-  const handleNextStep = () => {
-    setStep((prevStep) => prevStep + 1);
-  };
-
-  const handleBookingConfirmation = () => {
-    onBookRide(bookingAmount, 'test_ride_id');
-  };
-
-  const handleCapturePayment = async () => {
-    if (!paymentIntentId) {
-      console.error('No payment intent ID to capture.');
-      return;
-    }
-
-    try {
-      const response = await fetch('/api/capture-payment-intent', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ paymentIntentId, customerEmail: userEmail }),
-      });
-
-      const result = await response.json();
-      if (result.error) {
-        console.error('Error capturing payment:', result.error);
-      } else {
-        onPaymentIntentUpdate(paymentIntentId, 'captured');
-        console.log('Payment captured successfully.');
+    return () => {
+      if (window.google && window.google.maps && window.google.maps.event) {
+        window.google.maps.event.removeListener(destinationListener);
+        window.google.maps.event.removeListener(pickupListener);
       }
-    } catch (error) {
-      console.error('Error capturing payment:', error);
+    };
+  };
+
+  // Geolocation for current location
+  const handleUseCurrentLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const locationString = `Lat: ${position.coords.latitude}, Lng: ${position.coords.longitude}`;
+          setPickupLocation(locationString);
+          setPickupCoords(new window.google.maps.LatLng(position.coords.latitude, position.coords.longitude));
+          onPickupSelect(locationString);
+          setStep(2);
+        },
+        (error) => {
+          console.error('Error fetching current location:', error);
+        }
+      );
+    } else {
+      console.error('Geolocation is not supported by this browser.');
     }
   };
 
-  const handleCancelPayment = async () => {
-    if (!paymentIntentId) {
-      console.error('No payment intent ID to cancel.');
-      return;
-    }
+  // Booking amount calculation
+  const updateBookingAmount = () => {
+    if (pickupCoords && destinationCoords) {
+      const distance = calculateDistance(
+        pickupCoords.lat(), pickupCoords.lng(),
+        destinationCoords.lat(), destinationCoords.lng()
+      );
 
-    try {
-      const response = await fetch('/api/cancel-payment-intent', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ paymentIntentId, customerEmail: userEmail }),
-      });
-
-      const result = await response.json();
-      if (result.error) {
-        console.error('Error canceling payment:', result.error);
-      } else {
-        onPaymentIntentUpdate(null, 'canceled');
-        console.log('Payment canceled successfully.');
-      }
-    } catch (error) {
-      console.error('Error canceling payment:', error);
-    }
-  };
-
-  const handleRefundPayment = async () => {
-    if (!paymentIntentId) {
-      console.error('No payment intent ID to refund.');
-      return;
-    }
-
-    try {
-      const response = await fetch('/api/refund-payment-intent', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ paymentIntentId, customerEmail: userEmail }),
-      });
-
-      const result = await response.json();
-      if (result.error) {
-        console.error('Error refunding payment:', result.error);
-      } else {
-        onPaymentIntentUpdate(null, 'refunded');
-        console.log('Payment refunded successfully.');
-      }
-    } catch (error) {
-      console.error('Error refunding payment:', error);
+      const normalizedDistance = normalizeDistance(distance);
+      const price = calculatePrice(normalizedDistance);
+      setBookingAmount(price.toFixed(2));
+    } else {
+      setBookingAmount(0);
     }
   };
 
   return (
-    <Box className="search-bar-container" p={4} bg="gray.100" rounded="lg">
-      <Flex align="center" justify="space-between" wrap="nowrap">
-        {step === 0 && (
-          <Flex flex="1" align="center">
+    <Box className="search-bar-container" p={4} bg="gray.100" rounded="lg" w="full" h="auto">
+      <Flex direction="column" gap={4} w="full">
+        {step >= 0 && (
+          <Flex align="center" w="full">
             <Input
               type="text"
               ref={destinationInputRef}
               placeholder="Enter destination..."
               value={destination}
               onChange={(e) => setDestination(e.target.value)}
-              className="w-full pr-10"
+              className="w-full"
             />
-            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            <Search size={20} />
           </Flex>
         )}
 
         {step >= 1 && (
-          <Flex flex="1" align="center">
-            <MapPin size={20} />
-            <Box ml={2}>{destination}</Box>
-            <Button ml={4} onClick={handleNextStep}>Set Time</Button>
+          <Flex align="center" w="full" mt={2}>
+            <Input
+              type="text"
+              ref={pickupInputRef}
+              placeholder="Pickup location..."
+              value={pickupLocation}
+              onChange={(e) => setPickupLocation(e.target.value)}
+              disabled={pickupLocation === 'Current Location'}
+              className="w-full"
+            />
+            <Button onClick={handleUseCurrentLocation}>Use Current Location</Button>
           </Flex>
         )}
 
         {step >= 2 && (
-          <Flex flex="1" align="center">
-            <Clock size={20} />
-            <Select placeholder="Select time" value={countdownTime} onChange={(e) => setCountdownTime(e.target.value)}>
-              <option value="10">10 minutes</option>
-              <option value="20">20 minutes</option>
-              <option value="30">30 minutes</option>
-            </Select>
-            <Button ml={4} onClick={handleNextStep}>Confirm</Button>
-          </Flex>
-        )}
+          <>
+            <Flex align="center" w="full" mt={2}>
+              <Select value={countdownTime} onChange={(e) => setCountdownTime(e.target.value)} className="w-full">
+                <option value="Now">Now</option>
+                <option value="10">10 minutes</option>
+                <option value="20">20 minutes</option>
+                <option value="30">30 minutes</option>
+              </Select>
+            </Flex>
 
-        {step === 3 && (
-          <Flex flex="1" align="center">
-            <Button colorScheme="teal" onClick={handleBookingConfirmation}>
-              Book Now (${(bookingAmount / 100).toFixed(2)})
-            </Button>
-            {paymentIntentId && (
-              <>
-                <Button ml={4} colorScheme="green" onClick={() => handleCapturePayment()}>
-                  Capture Payment
-                </Button>
-                <Button ml={4} colorScheme="red" onClick={() => handleCancelPayment()}>
-                  Cancel Payment
-                </Button>
-                <Button ml={4} colorScheme="orange" onClick={() => handleRefundPayment()}>
-                  Refund Payment
-                </Button>
-              </>
-            )}
-          </Flex>
+            <Flex align="center" w="full" mt={2}>
+              <Button colorScheme="teal" onClick={handleBookingConfirmation} w="full">
+                Book Now (${bookingAmount})
+              </Button>
+            </Flex>
+            <Flex align="center" w="full" mt={2}>
+              <Button colorScheme="blue" onClick={handleCreateCheckoutSession} w="full">
+                Checkout (${bookingAmount})
+              </Button>
+            </Flex>
+          </>
         )}
       </Flex>
     </Box>
   );
 };
 
-// PropTypes validation
 SearchBar.propTypes = {
-  userEmail: PropTypes.string.isRequired,
   paymentIntentId: PropTypes.string,
   paymentIntentStatus: PropTypes.string,
   onPaymentIntentUpdate: PropTypes.func.isRequired,
   onBookRide: PropTypes.func.isRequired,
+  onCreateCheckoutSession: PropTypes.func.isRequired,
+  onDestinationSelect: PropTypes.func.isRequired,
+  onPickupSelect: PropTypes.func.isRequired,
 };
 
 export default SearchBar;

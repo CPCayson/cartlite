@@ -224,27 +224,53 @@ app.post('/api/create-stripe-account-link', async (req, res) => {
 });
 
 // API route to get Stripe balance
-app.get('/api/stripe-balance', async (req, res) => {
+app.get("/api/stripe-balance", async (req, res) => {
   try {
-    const balance = await stripe.balance.retrieve();
+    const stripeAccountId = "acct_1Pujt0PtQQNDZi06"; // Hardcoded for testing
+    const balance = await stripe.balance.retrieve(
+      {},
+      { stripeAccount: stripeAccountId }
+    );
     res.json({ balance });
   } catch (error) {
-    console.error('Error fetching Stripe balance:', error);
-    res.status(500).json({ error: 'Failed to fetch Stripe balance' });
+    console.error("Error fetching Stripe balance:", error);
+    res.status(500).json({ error: "Failed to fetch Stripe balance" });
   }
 });
 
-// API route to get Stripe transactions
-app.get('/api/stripe-transactions', async (req, res) => {
+// API route to get Stripe transactions with pagination supportapp.get('/api/stripe-transactions', async (req, res) => {
+app.get("/api/stripe-transactions", async (req, res) => {
   try {
-    const transactions = await stripe.balanceTransactions.list();
-    res.json({ transactions });
+    const stripeAccountId = "acct_1Pujt0PtQQNDZi06"; // Hardcoded for testing
+    const { starting_after } = req.query;
+
+    const transactions = await stripe.balanceTransactions.list(
+      {
+        limit: 10,
+        starting_after: starting_after || undefined,
+      },
+      { stripeAccount: stripeAccountId }
+    );
+
+    res.json({
+      transactions: transactions.data,
+      has_more: transactions.has_more,
+      last_transaction_id:
+        transactions.data.length > 0
+          ? transactions.data[transactions.data.length - 1].id
+          : null,
+    });
   } catch (error) {
-    console.error('Error fetching Stripe transactions:', error);
-    res.status(500).json({ error: 'Failed to fetch Stripe transactions' });
+    console.error("Error fetching Stripe transactions:", error);
+    res
+      .status(500)
+      .json({
+        error: "Failed to fetch Stripe transactions",
+        details: error.message,
+      });
   }
 });
-
+  
 
 
 // Start the server

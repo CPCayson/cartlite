@@ -1,136 +1,43 @@
-import React, { useState, useEffect } from 'react';
+// LeftPanel.jsx
+//things to do: Have a settings tab that activates right panel 
+//utilize metafizzy isoptope to dyymacally sort buisnesses by name, rating 
+//send geopoints for item selected to app.js -> from app.js to dashboard
+import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { collection, query, where, orderBy, limit, getDocs, startAfter } from 'firebase/firestore';
-import { db } from '../firebase/firebaseConfig';
 
-const LeftPanel = ({ 
-  isOpen, 
-  setIsOpen, 
-  appMode, 
-  handleAccept, 
-  handleSelectItem, 
-  activeCategory, 
-  setActiveCategory, 
-  viewType, 
-  setViewType, 
-  rideInProgress, 
-  handleSettingsClick 
+const LeftPanel = ({
+  isOpen,
+  setIsOpen,
+  appMode,
+  handleSelectItem,
+  activeCategory,
+  setActiveCategory,
+  viewType,
+  setViewType,
+  rideInProgress,
+  handleSettingsClick,
+  businesses,
+  loadMoreBusinesses,
+  loading,
+  hasMore
 }) => {
-  const [rideRequests, setRideRequests] = useState([
-    { id: 1, requester: 'John Doe', time: '5 mins ago' },
-    { id: 2, requester: 'Jane Smith', time: '10 mins ago' },
-  ]);
+  const [isFullScreen, setIsFullScreen] = useState(false);
 
+  const toggleFullScreen = () => {
+    setIsFullScreen(!isFullScreen);
+  };
+
+  // Define business categories
   const businessCategories = [
-    { name: 'all food', color: 'bg-red-500' },
+    { name: 'all', color: 'bg-red-500' },
     { name: 'Store', color: 'bg-purple-500' },
     { name: 'Food', color: 'bg-green-500' },
     { name: 'Bar', color: 'bg-yellow-500' },
   ];
 
-  const [businesses, setBusinesses] = useState([]);
-  const [lastDoc, setLastDoc] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-
-  useEffect(() => {
-    fetchBusinesses();
-  }, [activeCategory]);
-
-  useEffect(() => {
-    filterBusinesses();
-  }, [searchTerm]);
-
-  const fetchBusinesses = async () => {
-    setLoading(true);
-    let businessQuery;
-
-    if (activeCategory === 'all food') {
-      businessQuery = query(
-        collection(db, 'places'),
-        orderBy('name'),
-        limit(15)
-      );
-    } else {
-      businessQuery = query(
-        collection(db, 'places'),
-        where('category', '==', activeCategory),
-        orderBy('name'),
-        limit(15)
-      );
-    }
-
-    try {
-      const querySnapshot = await getDocs(businessQuery);
-      const fetchedBusinesses = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-
-      setBusinesses(fetchedBusinesses);
-      setLastDoc(querySnapshot.docs[querySnapshot.docs.length - 1]);
-      setHasMore(querySnapshot.docs.length === 15);
-    } catch (error) {
-      console.error('Error fetching businesses:', error);
-    }
-
-    setLoading(false);
-  };
-
-  const filterBusinesses = () => {
-    if (!searchTerm) return;
-
-    const filtered = businesses.filter(business =>
-      business.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    setBusinesses(filtered);
-  };
-
-  const loadMoreBusinesses = async () => {
-    if (!lastDoc || !hasMore || loading) return;
-
-    setLoading(true);
-    let businessQuery;
-
-    if (activeCategory === 'all food') {
-      businessQuery = query(
-        collection(db, 'places'),
-        orderBy('name'),
-        startAfter(lastDoc),
-        limit(15)
-      );
-    } else {
-      businessQuery = query(
-        collection(db, 'places'),
-        where('category', '==', activeCategory),
-        orderBy('name'),
-        startAfter(lastDoc),
-        limit(15)
-      );
-    }
-
-    try {
-      const querySnapshot = await getDocs(businessQuery);
-      const fetchedBusinesses = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-
-      setBusinesses((prev) => [...prev, ...fetchedBusinesses]);
-      setLastDoc(querySnapshot.docs[querySnapshot.docs.length - 1]);
-      setHasMore(querySnapshot.docs.length === 15);
-    } catch (error) {
-      console.error('Error fetching more businesses:', error);
-    }
-
-    setLoading(false);
-  };
-
-  const handleAcceptClick = (ride) => {
-    handleAccept(ride);
-    setIsOpen(false);
+  const handleCategoryClick = (category) => {
+    setActiveCategory(category);
   };
 
   const renderItems = () => {
@@ -163,40 +70,22 @@ const LeftPanel = ({
   };
 
   return (
-    <div className={`bg-white dark:bg-gray-800 shadow-lg transition-all duration-300 ${isOpen || rideInProgress ? 'w-1/2' : 'w-[30%]'} overflow-hidden`}>
-      <div className="p-4">
+    <div className={`bg-white dark:bg-gray-800 shadow-lg transition-all duration-300 ${isOpen || rideInProgress ? 'w-full lg:w-1/2' : 'w-[30%]'} overflow-hidden`}>
+      <button onClick={toggleFullScreen} className="absolute top-0 right-0 m-4 bg-blue-500 text-white px-4 py-2 rounded">
+        {isFullScreen ? 'Exit Full Screen' : 'Full Screen'}
+      </button>
+      <div className="p-4 h-full overflow-y-auto">
         {appMode === 'host' ? (
           <>
             <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-white">Incoming Accepts</h2>
-            {rideRequests.map((ride) => (
-              <div key={ride.id} className="flex justify-between items-center mb-4">
-                <div>
-                  <p className="text-sm text-gray-800 dark:text-white">{ride.requester}</p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">{ride.time}</p>
-                </div>
-                <button onClick={() => handleAcceptClick(ride)} className="bg-blue-500 text-white px-4 py-2 rounded">Accept</button>
-              </div>
-            ))}
-            <button 
-              onClick={handleSettingsClick} 
-              className="bg-gray-700 text-white px-4 py-2 rounded mt-4"
-            >
-              Settings
-            </button>
+            {/* Content for hosts */}
           </>
         ) : (
           <>
             <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-white">Businesses</h2>
             <div className="flex items-center mb-4">
-              <input 
-                type="text" 
-                className="px-3 py-2 border rounded w-full" 
-                placeholder="Search by name..." 
-                value={searchTerm} 
-                onChange={(e) => setSearchTerm(e.target.value)} 
-              />
               <button 
-                className="ml-2 px-3 py-2 bg-blue-500 text-white rounded"
+                className="bg-blue-500 text-white px-4 py-2 rounded mr-2"
                 onClick={() => setViewType(viewType === 'grid' ? 'list' : 'grid')}
               >
                 {viewType === 'grid' ? 'List View' : 'Grid View'}
@@ -206,8 +95,8 @@ const LeftPanel = ({
               {businessCategories.map((category) => (
                 <button
                   key={category.name}
-                  className={`px-3 py-1 rounded mr-2 mb-2 ${category.color} text-white`}
-                  onClick={() => setActiveCategory(category.name)}
+                  className={`px-3 py-1 rounded mr-2 mb-2 ${category.color} ${activeCategory === category.name ? 'border-2 border-black' : ''} text-white`}
+                  onClick={() => handleCategoryClick(category.name)}
                 >
                   {category.name}
                 </button>
@@ -237,11 +126,11 @@ const LeftPanel = ({
     </div>
   );
 };
+
 LeftPanel.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   setIsOpen: PropTypes.func.isRequired,
   appMode: PropTypes.string.isRequired,
-  handleAccept: PropTypes.func.isRequired,
   handleSelectItem: PropTypes.func.isRequired,
   activeCategory: PropTypes.string.isRequired,
   setActiveCategory: PropTypes.func.isRequired,
@@ -249,6 +138,11 @@ LeftPanel.propTypes = {
   setViewType: PropTypes.func.isRequired,
   rideInProgress: PropTypes.bool.isRequired,
   handleSettingsClick: PropTypes.func.isRequired,
+  businesses: PropTypes.array.isRequired,
+  loadMoreBusinesses: PropTypes.func.isRequired,
+  loading: PropTypes.bool.isRequired,
+  hasMore: PropTypes.bool.isRequired
 };
 
 export default LeftPanel;
+

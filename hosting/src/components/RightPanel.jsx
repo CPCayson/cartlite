@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { Button, Spinner, Input, FormControl, FormLabel, Select, Box, Text } from '@chakra-ui/react';
 import useAuthorization from '../hooks/useAuthorization';
 import TabbedSettingsForm from './Forms/TabbedSettingsForm';
 
-const RightPanel = ({ isOpen, setIsOpen, selectedItem, appMode, adjustHeightForBlueMoon }) => {
+const RightPanel = ({ isOpen, setIsOpen, selectedItem, appMode, adjustHeightForBlueMoon, userData, cartData }) => {
   const {
     user,
     authLoading,
@@ -23,9 +23,14 @@ const RightPanel = ({ isOpen, setIsOpen, selectedItem, appMode, adjustHeightForB
     setAuthMethod,
     redirecting,
     redirectToStripeOnboarding,
-  } = useAuthorization(); // Use the custom hook for authentication and onboarding logic
+  } = useAuthorization();
 
   const [loading, setLoading] = useState(false);
+
+  // Ensure props are available
+  if (!userData || !cartData) {
+    return null; // or provide a fallback UI
+  }
 
   if (authLoading || redirecting || loading) {
     return (
@@ -36,7 +41,16 @@ const RightPanel = ({ isOpen, setIsOpen, selectedItem, appMode, adjustHeightForB
   }
 
   return (
-    <div style={{ width: isOpen ? '50%' : '0', height: adjustHeightForBlueMoon ? '70%' : '100%', transition: 'all 0.3s ease-in-out', overflow: 'hidden', backgroundColor: 'white', boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)' }}>
+    <div
+      style={{
+        width: isOpen ? '50%' : '0',
+        height: adjustHeightForBlueMoon ? '70%' : '100%',
+        transition: 'all 0.3s ease-in-out',
+        overflow: 'hidden',
+        backgroundColor: 'white',
+        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+      }}
+    >
       {isOpen && (
         <div className="p-4">
           <h2 className="text-xl font-bold">{selectedItem ? selectedItem.name : 'Details'}</h2>
@@ -45,14 +59,15 @@ const RightPanel = ({ isOpen, setIsOpen, selectedItem, appMode, adjustHeightForB
           {/* Conditional rendering based on appMode */}
           {appMode === 'host' ? (
             <>
-              {/* Host Settings Form */}
-              <TabbedSettingsForm onSaveUserData={handleSaveUserData} />
-              {/* Logout Button */}
-              <Button colorScheme="red" onClick={handleLogout} className="mt-4">
+              <TabbedSettingsForm
+                userData={userData}
+                cartData={cartData}
+                onSaveUserData={() => {/* Implement handleSaveUserData */}}
+                onSaveCartData={() => {/* Implement handleSaveCartData */}}
+              />
+              <Button colorScheme="red" onClick={handleLogout} mt={4}>
                 Logout
               </Button>
-
-              
             </>
           ) : (
             <>
@@ -63,7 +78,6 @@ const RightPanel = ({ isOpen, setIsOpen, selectedItem, appMode, adjustHeightForB
                   <Select value={authMethod} onChange={(e) => setAuthMethod(e.target.value)}>
                     <option value="email">Email</option>
                     <option value="phone">Phone</option>
-                    {/* Add other methods like Google, Facebook, etc. if needed */}
                   </Select>
                 </FormControl>
 
@@ -86,7 +100,7 @@ const RightPanel = ({ isOpen, setIsOpen, selectedItem, appMode, adjustHeightForB
                       <FormLabel>Phone Number</FormLabel>
                       <Input type="tel" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} />
                     </FormControl>
-                    <div id="recaptcha-container"></div> {/* Recaptcha for phone authentication */}
+                    <div id="recaptcha-container"></div>
                   </>
                 )}
 
@@ -110,7 +124,9 @@ const RightPanel = ({ isOpen, setIsOpen, selectedItem, appMode, adjustHeightForB
             </>
           )}
 
-          <Button onClick={() => setIsOpen(false)} mt={4}>Close</Button>
+          <Button onClick={() => setIsOpen(false)} mt={4}>
+            Close
+          </Button>
         </div>
       )}
     </div>
@@ -126,6 +142,8 @@ RightPanel.propTypes = {
   }),
   appMode: PropTypes.oneOf(['rabbit', 'host']).isRequired,
   adjustHeightForBlueMoon: PropTypes.bool,
+  userData: PropTypes.object.isRequired,
+  cartData: PropTypes.object.isRequired,
 };
 
 export default RightPanel;

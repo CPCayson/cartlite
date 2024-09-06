@@ -1,6 +1,5 @@
-// AuthContext.jsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { auth } from '../firebase/firebaseConfig';
+import { auth, db } from '../firebase/firebaseConfig'; // Ensure db (Firestore) is imported
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -9,6 +8,8 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
 } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore'; // Firestore functions
+import { useNavigate } from 'react-router-dom'; // For navigation
 import PropTypes from 'prop-types';
 
 // Create a context for the authentication
@@ -28,12 +29,27 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     console.log('AuthProvider: Initializing authentication listener');
 
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      setLoading(true);
+      if (currentUser) {
+        // Fetch the user document from Firestore
+        const userDocRef = doc(db, 'users', currentUser.uid);
+        const userDoc = await getDoc(userDocRef);
+
+        if (!userDoc.exists()) {
+          // If no document exists, redirect to onboarding
+          navigate('/post-signup'); // Redirect to the onboarding page
+        } else {
+          setUser(currentUser); // Set the current user if document exists
+        }
+      } else {
+        setUser(null); // No user logged in
+      }
       setLoading(false);
     });
 
@@ -42,13 +58,24 @@ export const AuthProvider = ({ children }) => {
       console.log('AuthProvider: Cleaning up authentication listener');
       unsubscribe();
     };
-  }, []);
+  }, [navigate]);
 
   // Function to log in a user
   const login = async (email, password) => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      setUser(userCredential.user);
+      const currentUser = userCredential.user;
+
+      // Fetch the user document from Firestore after login
+      const userDocRef = doc(db, 'users', currentUser.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (!userDoc.exists()) {
+        navigate('/post-signup'); // Redirect to onboarding if user doesn't exist
+      } else {
+        setUser(currentUser);
+      }
+
       setError(null); // Clear any previous errors
     } catch (err) {
       console.error('Error during login:', err);
@@ -60,7 +87,17 @@ export const AuthProvider = ({ children }) => {
   const register = async (email, password) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      setUser(userCredential.user);
+      const newUser = userCredential.user;
+
+      // Create a new user document in Firestore after registration
+      await setDoc(doc(db, 'users', newUser.uid), {
+        email: newUser.email,
+        uid: newUser.uid,
+        stripeAccountStatus: 'not_created', // Default Stripe status
+      });
+
+      navigate('/post-signup'); // Redirect to onboarding after registration
+      setUser(newUser);
       setError(null); // Clear any previous errors
     } catch (err) {
       console.error('Error during registration:', err);
@@ -73,7 +110,23 @@ export const AuthProvider = ({ children }) => {
     try {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
-      setUser(result.user);
+      const googleUser = result.user;
+
+      // Check if the user document exists in Firestore
+      const userDocRef = doc(db, 'users', googleUser.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (!userDoc.exists()) {
+        // Create a new document if not found
+        await setDoc(userDocRef, {
+          email: googleUser.email,
+          uid: googleUser.uid,
+          stripeAccountStatus: 'not_created',
+        });
+        navigate('/post-signup'); // Redirect to onboarding if user doesn't exist
+      }
+
+      setUser(googleUser);
       setError(null); // Clear any previous errors
     } catch (err) {
       console.error('Error during Google sign-in:', err);
@@ -114,3 +167,5 @@ export const AuthProvider = ({ children }) => {
 AuthProvider.propTypes = {
   children: PropTypes.node.isRequired,
 };
+
+export default AuthProvider;

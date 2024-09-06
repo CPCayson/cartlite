@@ -119,15 +119,19 @@ export const createCheckoutSession = async (sessionData) => {
   }
 };
 // Function to create a Stripe connected account
-export const createStripeConnectedAccount = async (email) => {
+export const createStripeConnectedAccount_test = async (email) => {
   try {
-    const response = await stripeApi.post('/stripeApi/create-connected-account', { email });
-    return response.data;
+    const response = await axios.post('/api/create-stripe-account_test', { email });
+    return {
+      stripeAccountId: response.data.stripeAccountId,
+      onboardingUrl: response.data.url, // Stripe onboarding link
+    };
   } catch (error) {
     console.error('Error creating Stripe connected account:', error);
-    throw new Error('Failed to create Stripe connected account: ' + (error.response?.data?.error || error.message));
+    throw new Error('Failed to create Stripe connected account');
   }
 };
+
 
 
 // Function to create an account link for Stripe onboarding
