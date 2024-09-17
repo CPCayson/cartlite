@@ -1,203 +1,178 @@
-import React, { useState, useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-
-import {
-  collection,
-  getDocs,
-  query,
-  where,
-  orderBy,
-  limit,
-  startAfter,
-} from "firebase/firestore";
-import { db } from "./firebase/firebaseConfig";
-import { ChakraProvider } from "@chakra-ui/react";
-import { Elements } from "@stripe/react-stripe-js";
-import { loadStripe } from "@stripe/stripe-js";
-
-// Context Providers
-import { FirebaseProvider } from "./context/FirebaseContext.jsx";
-import { ErrorBoundary } from "./context/ErrorBoundary.jsx";
-import { MapsProvider } from "./context/MapsContext.jsx";
-import { StripeProvider } from "./context/StripeContext.jsx";
-import { AuthProvider } from "./context/AuthContext.jsx";
-
-// Components
-import Header from "./components/Header.jsx";
-import LeftPanel from "./components/LeftPanel.jsx";
-import RightPanel from "./components/RightPanel.jsx";
-import Footer from "./components/Footer.jsx";
-import Dashboard from "./components/Dashboard.jsx";
-import ActiveContainer from "./components/ActiveContainer.jsx";
-import MapComponent from "./components/MapComponent.jsx";
+// src/App.jsx
+import  { useEffect, useState } from 'react';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { Elements } from '@stripe/react-stripe-js';
+import { loadStripe } from '@stripe/stripe-js';
+import Header from './components/Header';
+import Footer from './components/Footer';
+import ViewToggle from './components/app/ViewToggle';
+import LeftPanel from './components/LeftPanel';
+import Dashboard from './components/Dashboard';
+import RightPanel from './components/RightPanel';
 import SignupForm from './components/Forms/SignupForm';
-import StripeOnboarding from './components/Forms/StripeOnboarding';
 import TermsAndConditions from './components/Forms/TermsAndConditions';
 import PostSignup from './components/Forms/PostSignup';
+import UserProfileForm from './components/Forms/UserProfileForm';
+import CartProfileForm from './components/Forms/CartProfileForm';
+import AccountSessionComponent from './components/AccountSessionComponent';
+import RideStatusTracker from './components/RideStatusTracker';
+import CheckoutSuccess from './components/Forms/CheckoutSuccess';
+import OnboardingRedirect from './components/Auth/OnboardingRedirect';
+import useAppState from './hooks/useAppState';
+import { GeolocationProvider } from './context/GeolocationContext';
+import AppProviders from './components/app/AppProviders';
 
-// Firebase Config and API functions
-import {
-  handleCreateStripeOnboarding,
-  handleCreateCheckoutSession,
-  handleCapturePaymentIntent,
-  handleCancelPaymentIntent,
-} from "./api/stripeApi";
-
-// Stripe Configuration
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
+/**
+ * Main App component that sets up context providers and renders the layout.
+ */
 const App = () => {
-  const [darkMode, setDarkMode] = useState(false);
-  const [appMode, setAppMode] = useState("rabbit");
-  const [isRightPanelOpen, setIsRightPanelOpen] = useState(false);
-  const [fullscreenPanel, setFullscreenPanel] = useState(null); // Keeps track of which panel is fullscreen
-  const [selectedItem, setSelectedItem] = useState(null);
-  const [rideInProgress, setRideInProgress] = useState(false);
-  const [activeCategory, setActiveCategory] = useState("all food");
-  const [viewType, setViewType] = useState("list");
-  const [businesses, setBusinesses] = useState([]);
-  const [filteredBusinesses, setFilteredBusinesses] = useState([]);
-  const [cachedBusinesses, setCachedBusinesses] = useState({});
-  const [chatMessages, setChatMessages] = useState([]);
-  const [chatInput, setChatInput] = useState("");
-  const [userEmail] = useState("test@example.com");
-  const [paymentIntentId, setPaymentIntentId] = useState(null);
-  const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [hasMore, setHasMore] = useState(true);
-  const [searchDestination, setSearchDestination] = useState(null);
-  const [searchPickupLocation, setSearchPickupLocation] = useState(null);
+  const appState = useAppState();
 
-  const toggleFullscreen = (panel) => {
-    setFullscreenPanel(prev => (prev === panel ? null : panel));
+  const {
+    darkMode,
+    setDarkMode,
+    appMode,
+    setAppMode,
+    viewMode,
+    setViewMode,
+    isRightPanelOpen,
+    setIsRightPanelOpen,
+    isLeftPanelOpen,
+    setIsLeftPanelOpen,
+    businesses,
+    selectedItem,
+    setSelectedItem,
+    fetchBusinesses,
+    rideRequest,
+    rideRequestId,
+    handleSearchDestinationSelect,
+    handleSearchPickupSelect,
+    handleCancelRide,
+    fetchMostRecentRideRequest,
+    loadingBusinesses,
+    errorBusinesses,
+  } = appState;
+
+  const handleSelectItem = (item) => {
+    setSelectedItem(item);
   };
 
+  // Fetch the most recent ride request on mount
   useEffect(() => {
-    const fetchBusinesses = async () => {
-      setLoading(true);
-      try {
-        const querySnapshot = await getDocs(collection(db, 'places'));
-        const businessesData = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setBusinesses(businessesData);
-        setFilteredBusinesses(businessesData);
-        setError('');
-      } catch (error) {
-        console.error('Error fetching businesses from Firebase:', error);
-        setError('Failed to load businesses');
-      } finally {
-        setLoading(false);
-      }
-    };
+    fetchMostRecentRideRequest();
+  }, [fetchMostRecentRideRequest]);
 
-    fetchBusinesses();
-  }, []);
 
-  useEffect(() => {
-    if (cachedBusinesses[activeCategory]) {
-      setFilteredBusinesses(cachedBusinesses[activeCategory]);
-    } else if (activeCategory === 'all food') {
-      setFilteredBusinesses(businesses);
-    } else {
-      const filtered = businesses.filter((business) => business.category === activeCategory);
-      setFilteredBusinesses(filtered);
-      setCachedBusinesses((prevCache) => ({
-        ...prevCache,
-        [activeCategory]: filtered,
-      }));
-    }
-  }, [activeCategory, businesses, cachedBusinesses]);
+    const businessCategories = [
+      { name: 'all', color: 'bg-red-500' },
+      { name: 'Store', color: 'bg-purple-500' },
+      { name: 'Food', color: 'bg-green-500' },
+      { name: 'Bar', color: 'bg-yellow-500' },
+      { name: 'Entertainment', color: 'bg-blue-500' },
+      { name: 'Rental', color: 'bg-indigo-500' },
+      { name: 'Theater', color: 'bg-pink-500' },
+  ];
 
   return (
-    <Router>
-      <div className={`flex flex-col h-screen ${darkMode ? 'dark' : ''} overflow-auto`}>
-        <ErrorBoundary>
-          <FirebaseProvider>
-            <AuthProvider>
-              <ChakraProvider>
-                <MapsProvider apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
-                  <Elements stripe={stripePromise}>
-                    <StripeProvider>
-                      <Header
-                        darkMode={darkMode}
-                        setDarkMode={setDarkMode}
-                        appMode={appMode}
-                        setAppMode={setAppMode}
-                        setIsLeftPanelOpen={() => {}}
-                        setIsRightPanelOpen={setIsRightPanelOpen}
-                      />
+    <AppProviders>
+      <Router>
+        <GeolocationProvider>
+          <Elements stripe={stripePromise}>
+            <div className={`flex flex-col h-screen ${darkMode ? 'dark' : ''} overflow-auto`}>
+              <Header
+                darkMode={darkMode}
+                setDarkMode={setDarkMode}
+                appMode={appMode}
+                setAppMode={setAppMode}
+                setIsLeftPanelOpen={setIsLeftPanelOpen}
+                setIsRightPanelOpen={setIsRightPanelOpen}
+              />
 
-                      <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
-                        {fullscreenPanel === "leftPanel" ? (
-                          <LeftPanel
-                            isOpen={true}
-                            setIsOpen={() => {}}
-                            appMode={appMode}
-                            handleAccept={() => {}}
-                            activeCategory={activeCategory}
-                            setActiveCategory={setActiveCategory}
-                            rideInProgress={rideInProgress}
-                            businesses={filteredBusinesses}
-                            toggleFullscreen={() => toggleFullscreen("leftPanel")}
-                            fullscreen
+              <ViewToggle
+                setViewMode={setViewMode}
+                setIsLeftPanelOpen={setIsLeftPanelOpen}
+                setIsRightPanelOpen={setIsRightPanelOpen}
+              />
+
+              {/* Main Content with Routes */}
+              <main className="flex-grow">
+                <Routes>
+                  {/* Dashboard and Panels */}
+                  <Route
+                    path="/"
+                    element={
+                      <div className="flex flex-col md:flex-row h-full overflow-hidden">
+                        {/* Left Panel */}
+                        <LeftPanel
+                          appMode={appMode}
+                          darkMode={darkMode}
+                          isOpen={isLeftPanelOpen}
+                          setIsOpen={setIsLeftPanelOpen}
+                          isRightPanelOpen={isRightPanelOpen}
+                          setIsRightPanelOpen={setIsRightPanelOpen}
+                          businesses={businesses}
+                          selectedItem={selectedItem}
+                          handleSelectItem={handleSelectItem}
+                          viewType={viewMode}
+                          fetchBusinesses={fetchBusinesses}
+                          loadingBusinesses={loadingBusinesses}
+                          errorBusinesses={errorBusinesses}
+                        />
+
+                        {/* Dashboard */}
+                        <div className="flex-grow h-full overflow-y-auto">
+                          <Dashboard
+                            selectedItem={selectedItem}
+                            handleCancelRide={handleCancelRide}
+                            handleSearchDestinationSelect={handleSearchDestinationSelect}
+                            handleSearchPickupSelect={handleSearchPickupSelect}
                           />
-                        ) : fullscreenPanel === "dashboard" ? (
-                          <main className="flex-1 flex flex-col p-2 sm:p-4">
-                            <Dashboard
-                              appMode={appMode}
-                              selectedItem={selectedItem}
-                              onSearchDestinationSelect={setSearchDestination}
-                              onSearchPickupSelect={setSearchPickupLocation}
-                              createStripeCheckoutSession={() => {}}
-                              toggleFullscreen={() => toggleFullscreen("dashboard")}
-                              fullscreen
-                            />
-                          </main>
-                        ) : (
-                          <>
-                            <LeftPanel
-                              isOpen={true}
-                              setIsOpen={() => {}}
-                              appMode={appMode}
-                              handleAccept={() => {}}
-                              activeCategory={activeCategory}
-                              setActiveCategory={setActiveCategory}
-                              rideInProgress={rideInProgress}
-                              businesses={filteredBusinesses}
-                              toggleFullscreen={() => toggleFullscreen("leftPanel")}
-                            />
-                            <main className="flex-1 flex flex-col p-2 sm:p-4">
-                              <Dashboard
-                                appMode={appMode}
-                                selectedItem={selectedItem}
-                                onSearchDestinationSelect={setSearchDestination}
-                                onSearchPickupSelect={setSearchPickupLocation}
-                                createStripeCheckoutSession={() => {}}
-                                toggleFullscreen={() => toggleFullscreen("dashboard")}
-                              />
-                              <MapComponent
-                                businesses={filteredBusinesses}
-                                selectedPlace={selectedItem}
-                                searchDestination={searchDestination}
-                                searchPickupLocation={searchPickupLocation}
-                              />
-                            </main>
-                          </>
+                        </div>
+
+                        {/* Right Panel */}
+                        {isRightPanelOpen && (
+                          <RightPanel
+                            isOpen={isRightPanelOpen}
+                            setIsOpen={setIsRightPanelOpen}
+                            appMode={appMode}
+                            darkMode={darkMode}
+                            rideRequestId={rideRequestId}
+                            rideRequest={rideRequest}
+                            loading={loadingBusinesses} // Ensure this prop makes sense
+                            viewType="list"
+                            businesses={businesses}
+                            isRightPanelOpen={isRightPanelOpen}
+                            setIsRightPanelOpen={setIsRightPanelOpen}
+                            fetchBusinesses={fetchBusinesses}
+                            error={errorBusinesses}
+                            fetchMostRecentRideRequest={fetchMostRecentRideRequest}
+                          />
                         )}
                       </div>
-                      <Footer />
-                    </StripeProvider>
-                  </Elements>
-                </MapsProvider>
-              </ChakraProvider>
-            </AuthProvider>
-          </FirebaseProvider>
-        </ErrorBoundary>
-      </div>
-    </Router>
+                    }
+                  />
+
+                  {/* Other Routes */}
+                  <Route path="/signup" element={<SignupForm />} />
+                  <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
+                  <Route path="/post-signup" element={<PostSignup />} />
+                  <Route path="/user-profile" element={<UserProfileForm />} />
+                  <Route path="/cart-profile" element={<CartProfileForm />} />
+                  <Route path="/account-session" element={<AccountSessionComponent />} />
+                  <Route path="/active" element={<RideStatusTracker />} />
+                  <Route path="/success" element={<CheckoutSuccess />} />
+                  <Route path="/onboarding-redirect" element={<OnboardingRedirect />} />
+                </Routes>
+              </main>
+
+              <Footer />
+            </div>
+          </Elements>
+        </GeolocationProvider>
+      </Router>
+    </AppProviders>
   );
 };
 

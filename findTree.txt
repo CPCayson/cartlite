@@ -1,304 +1,801 @@
 Folder: hosting/src\api
-Filename: firebaseApi.jsx
+Filename: stripeApi.jsx
 Contents:
 import { db } from '../firebase/firebaseConfig';
-import { collection, doc, setDoc, getDoc, updateDoc, query, where, onSnapshot, GeoPoint, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc } from 'firebase/firestore';
+import axios from 'axios';
+import { auth } from '../firebase/firebaseConfig'; // Ensure this is the correct path
 
-// Function to create a new ride request
-export async function createRideRequest(paymentIntent, rideDetails) {
-  console.log('firebaseAPI: Creating a new ride request with details:', rideDetails);
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-  const rideRequestRef = doc(collection(db, 'rideRequests'));
+// Create an Axios instance
+const stripeApi = axios.create({
+  baseURL: API_BASE_URL,
+});
+
+// Add a request interceptor to attach the Firebase auth token
+stripeApi.interceptors.request.use(async (config) => {
   try {
-    await setDoc(rideRequestRef, {
-      id: rideRequestRef.id,
-      paymentIntentId: paymentIntent.id,
-      hostId: rideDetails.hostId,
-      rideFee: rideDetails.amount,
-      user_uid: rideDetails.userId,
-      user_name: rideDetails.userName,
-      user_location: new GeoPoint(rideDetails.userLocation.latitude, rideDetails.userLocation.longitude),
-      destination_location: new GeoPoint(rideDetails.destinationLocation.latitude, rideDetails.destinationLocation.longitude),
-      status: 'pending',
-      is_driver_assigned: false,
-      createdAt: serverTimestamp(),
-    });
-    console.log('firebaseAPI: Ride request created successfully with ID:', rideRequestRef.id);
-  } catch (error) {
-    console.error('firebaseAPI: Error creating ride request', error);
-    throw error;
-  }
-}
-
-// Function to update a booking
-export async function updateBooking(rideRequestId, bookingData) {
-  console.log('firebaseAPI: Updating booking with ID:', rideRequestId, 'and data:', bookingData);
-
-  const bookingRef = doc(db, 'bookings', rideRequestId);
-  try {
-    await updateDoc(bookingRef, {
-      ...bookingData,
-      updated_at: serverTimestamp(),
-    });
-    console.log('firebaseAPI: Booking updated successfully');
-  } catch (error) {
-    console.error('firebaseAPI: Error updating booking', error);
-    throw error;
-  }
-}
-
-// Function to fetch user profile data
-export async function getProfileData(userId) {
-  console.log('firebaseAPI: Fetching profile data for user ID:', userId);
-
-  const userDocRef = doc(db, 'users', userId);
-  try {
-    const userDoc = await getDoc(userDocRef);
-    if (userDoc.exists()) {
-      console.log('firebaseAPI: Profile data fetched successfully:', userDoc.data());
-      return userDoc.data();
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      const token = await currentUser.getIdToken(true); // Force refresh the token
+      config.headers.Authorization = `Bearer ${token}`;
     } else {
-      console.warn('firebaseAPI: No profile data found for user ID:', userId);
-      return null;
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    }
+    return config;
+  } catch (error) {
+    console.error('Error setting up request interceptor:', error);
+    return Promise.reject(error);
+  }
+});
+
+// Example API function to update Stripe status in Firestore
+export const updateStripeStatusInDb = async (userId, status) => {
+  try {
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, { stripeAccountStatus: status });
+  } catch (error) {
+    console.error('Error updating Stripe status in Firestore:', error);
+    throw error; // Rethrow to handle it in the calling function
+  }
+};
+
+
+
+// Function to create an account link for Stripe onboarding
+export const createAccountLink = async (accountId) => {
+  if (!accountId) {
+    throw new Error('Account ID is required');
+  }
+  try {
+    const response = await stripeApi.post('/stripeApi/create-account-link', { accountId });
+    return response.data;
+  } catch (error) {
+    console.error('Error creating account link:', error);
+    throw new Error('Failed to create account link: ' + (error.response?.data?.error || error.message));
+  }
+};
+
+export const updateUserStripeAccount = async (userId, accountData) => {
+  if (!userId) {
+    throw new Error('User ID is required')
+  }
+  try {
+    const response = await stripeApi.post(`/stripeApi/update-user-stripe-account/${userId}`, accountData)
+    return response.data
+  } catch (error) {
+    console.error('Error updating user Stripe account:', error)
+    throw new Error('Failed to update user Stripe account: ' + (error.response?.data?.error || error.message))
+  }
+}
+
+
+// Function to create a new Stripe customer
+export const createCustomer = async (customerData) => {
+  try {
+    const response = await stripeApi.post('/stripeApi/create-customer', customerData);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating Stripe customer:', error);
+    throw new Error('Failed to create Stripe customer: ' + (error.response?.data?.error || error.message));
+  }
+};
+
+// Function to update an existing Stripe customer
+export const updateCustomer = async (customerId, updateData) => {
+  if (!customerId) {
+    throw new Error('Customer ID is required');
+  }
+  try {
+    const response = await stripeApi.post(`/stripeApi/update-customer/${customerId}`, updateData);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating Stripe customer:', error);
+    throw new Error('Failed to update Stripe customer: ' + (error.response?.data?.error || error.message));
+  }
+};
+
+// Function to retrieve a payment intent
+export const retrievePaymentIntent = async (paymentIntentId) => {
+  if (!paymentIntentId) {
+    throw new Error('Payment Intent ID is required');
+  }
+  try {
+    const response = await stripeApi.get(`/stripeApi/retrieve-payment-intent/${paymentIntentId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error retrieving payment intent:', error);
+    throw new Error('Failed to retrieve payment intent: ' + (error.response?.data?.error || error.message));
+  }
+};
+
+// Function to create a checkout session
+export const createCheckoutSession = async (sessionData) => {
+  try {
+    const response = await stripeApi.post('/stripeApi/create-checkout-session', sessionData);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating checkout session:', error);
+    throw new Error('Failed to create checkout session: ' + (error.response?.data?.error || error.message));
+  }
+};
+// Function to create a Stripe connected account
+export const createStripeConnectedAccount = async (email) => {
+  try {
+    const response = await axios.post('/api/create-stripe-account_test', { email });
+    return {
+      stripeAccountId: response.data.stripeAccountId,
+      onboardingUrl: response.data.url, // Stripe onboarding link
+    };
+  } catch (error) {
+    console.error('Error creating Stripe connected account:', error);
+    throw new Error('Failed to create Stripe connected account');
+  }
+};
+
+
+
+// Function to create an account link for Stripe onboarding
+
+
+// Function to complete Stripe onboarding
+export const completeStripeOnboarding = async (accountId) => {
+  if (!accountId) {
+    throw new Error('Account ID is required');
+  }
+  try {
+    const response = await stripeApi.post('/stripeApi/complete-stripe-onboarding', { accountId });
+    return response.data;
+  } catch (error) {
+    console.error('Error completing Stripe onboarding:', error);
+    throw new Error('Failed to complete Stripe onboarding: ' + (error.response?.data?.error || error.message));
+  }
+};
+
+// Function to create an account session for Stripe Connect
+export const createAccountSession = async (accountId) => {
+  if (!accountId) {
+    throw new Error('Account ID is required');
+  }
+  try {
+    const response = await stripeApi.post('/stripeApi/create-account-session', { accountId });
+    return response.data;
+  } catch (error) {
+    console.error('Error creating account session:', error);
+    throw new Error('Failed to create account session: ' + (error.response?.data?.error || error.message));
+  }
+};
+
+// Function to get Stripe account status
+export const getStripeAccountStatus = async (accountId) => {
+  if (!accountId) {
+    throw new Error('Account ID is required');
+  }
+  try {
+    const response = await stripeApi.get(`/stripeApi/stripe-account-status/${accountId}`);
+    return response.data.status;
+  } catch (error) {
+    console.error('Error fetching Stripe account status:', error);
+    throw new Error('Failed to fetch Stripe account status: ' + (error.response?.data?.error || error.message));
+  }
+};
+
+// Function to create a payment intent
+export const createPaymentIntent = async (paymentDetails) => {
+  const headers = { 'Content-Type': 'application/json' };
+  if (!paymentDetails.rideId || paymentDetails.rideId.trim() === '') {
+    throw new Error('Ride ID is required and cannot be empty.');
+  }
+  try {
+    const response = await stripeApi.post('/stripeApi/create-payment-intent', paymentDetails, { headers });
+    return response.data;
+  } catch (error) {
+    console.error('Error creating payment intent:', error);
+    throw new Error('Failed to create payment intent: ' + (error.response?.data?.error || error.message));
+  }
+};
+
+// Function to capture a payment intent
+export const capturePaymentIntent = async (rideId, amount) => {
+  if (!rideId || !amount) {
+    throw new Error('Missing rideId or amount in request body');
+  }
+  try {
+    const response = await stripeApi.post('/stripeApi/capture-payment-intent', { rideId, amount });
+    return response.data;
+  } catch (error) {
+    console.error('Error capturing payment:', error);
+    throw new Error('Failed to capture payment: ' + (error.response?.data?.error || error.message));
+  }
+};
+
+// Function to cancel a payment intent
+export const cancelPaymentIntent = async (paymentIntentId) => {
+  if (!paymentIntentId) {
+    throw new Error('Payment Intent ID is required');
+  }
+  try {
+    const response = await stripeApi.post('/stripeApi/cancel-payment-intent', { paymentIntentId });
+    return response.data;
+  } catch (error) {
+    console.error('Error canceling payment intent:', error);
+    throw new Error('Failed to cancel payment intent: ' + (error.response?.data?.error || error.message));
+  }
+};
+
+// Function to refund a payment intent
+export const refundPaymentIntent = async (paymentIntentId) => {
+  if (!paymentIntentId) {
+    throw new Error('Payment Intent ID is required');
+  }
+  try {
+    const response = await stripeApi.post('/stripeApi/refund-payment-intent', { paymentIntentId });
+    return response.data;
+  } catch (error) {
+    console.error('Error refunding payment intent:', error);
+    throw new Error('Failed to refund payment: ' + (error.response?.data?.error || error.message));
+  }
+};
+
+// Function to handle request actions
+export const handleRequestAction = async (request, action) => {
+  try {
+    if (!request.rideId || !request.rideFee) {
+      throw new Error('Missing rideId or rideFee in the request data');
+    }
+
+    if (action === 'accept') {
+      await capturePaymentIntent(request.rideId, Math.round(request.rideFee * 100));
+    } else if (action === 'reject') {
+      if (!request.paymentIntentId) {
+        throw new Error('Payment Intent ID is required');
+      }
+      await cancelPaymentIntent(request.paymentIntentId);
     }
   } catch (error) {
-    console.error('firebaseAPI: Error fetching profile data', error);
+    console.error(`Error ${action === 'accept' ? 'accepting' : 'rejecting'} ride request:`, error);
     throw error;
   }
-}
-
-// Function to save user profile data
-export async function saveProfileData(userId, profileData) {
-  console.log('firebaseAPI: Saving profile data for user ID:', userId, 'with data:', profileData);
-
-  const userDocRef = doc(db, 'users', userId);
+};
+export const handleCreateStripeOnboarding = async (email) => {
   try {
-    await setDoc(userDocRef, profileData, { merge: true });
-    console.log('firebaseAPI: Profile data saved successfully');
+    const response = await axios.post('/api/create-stripe-account-link', { email });
+    window.location.href = response.data.url; // Redirect to Stripe onboarding
   } catch (error) {
-    console.error('firebaseAPI: Error saving profile data', error);
-    throw error;
+    console.error('Error creating Stripe onboarding link:', error);
+    throw new Error('Error creating Stripe onboarding link: ' + error.message);
   }
-}
+};
 
-// Function to listen for ride requests
-export function listenToRideRequests(callback) {
-  console.log('firebaseAPI: Setting up listener for ride requests');
 
-  const q = query(collection(db, 'rideRequests'), where('is_driver_assigned', '==', false));
-  const unsubscribe = onSnapshot(q, (snapshot) => {
-    const rideRequests = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    console.log('firebaseAPI: Ride requests snapshot updated:', rideRequests);
-    callback(rideRequests);
-  }, (error) => {
-    console.error('firebaseAPI: Error listening to ride requests', error);
-  });
 
-  return unsubscribe;
-}
+export const handleCreateCheckoutSession = async (amount, customerEmail) => {
+  try {
+    const response = await axios.post('/api/create-checkout-session', {
+      amount: parseInt(amount) * 100, // Convert to cents
+      customerEmail,
+    });
+    window.location.href = response.data.url; // Redirect to Stripe Checkout
+  } catch (error) {
+    console.error('Error creating checkout session:', error);
+    throw new Error('Error creating checkout session: ' + error.message);
+  }
+};
 
+export const handleCapturePaymentIntent = async (paymentIntentId, customerEmail) => {
+  try {
+    const response = await axios.post('/api/capture-payment-intent', {
+      paymentIntentId,
+      customerEmail,
+    });
+    return response.data; // Return the captured payment intent data
+  } catch (error) {
+    console.error('Error capturing payment intent:', error);
+    throw new Error('Error capturing payment intent: ' + error.message);
+  }
+};
+
+export const handleCancelPaymentIntent = async (paymentIntentId) => {
+  try {
+    const response = await axios.post('/api/cancel-payment-intent', { paymentIntentId });
+    return response.data; // Return the canceled payment intent data
+  } catch (error) {
+    console.error('Error canceling payment intent:', error);
+    throw new Error('Error canceling payment intent: ' + error.message);
+  }
+};
+
+// Default export of the Axios instance for custom use cases
+export default stripeApi;
 
 
 ================================================================================
 
-Folder: hosting/src\context
-Filename: FirebaseContext.jsx
+Folder: hosting/src\components\Forms
+Filename: StripeOnboarding.jsx
 Contents:
-import { createContext, useContext, useEffect, useState, useMemo } from 'react';
-import PropTypes from 'prop-types';
-import { auth, db } from '../firebase/firebaseConfig'; 
+// StripeOnboarding.jsx
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import { useParams, useNavigate } from 'react-router-dom';
 
-// Create a Firebase Context
-const FirebaseContext = createContext(null);
-
-// Firebase Provider Component
-export const FirebaseProvider = ({ children }) => {
-  console.log('FirebaseContext: Initializing Firebase Provider');
-  
-  const [user, setUser] = useState(null);
+const StripeOnboarding = () => {
+  const { accountId } = useParams();
+  const [loading, setLoading] = useState(true);
+  const [link, setLink] = useState('');
+  const navigate = useNavigate();
 
   useEffect(() => {
-    console.log('FirebaseContext: Setting up Firebase Auth listener');
-    
-    // Listen for auth state changes
-    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
-      if (currentUser) {
-        console.log('FirebaseContext: User logged in', currentUser);
-        setUser(currentUser);
-      } else {
-        console.log('FirebaseContext: No user logged in');
-        setUser(null);
+    const fetchAccountLink = async () => {
+      try {
+        const response = await axios.post('https://us-central1-rabbit-2ba47.cloudfunctions.net/createStripeAccountLink_test', {
+          accountID: accountId
+        });
+
+        setLink(response.data.body.success);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error creating account link:', error);
+        setLoading(false);
       }
-    });
+    };
 
-    // Cleanup subscription on unmount
-    return () => unsubscribe();
-  }, []);
+    fetchAccountLink();
+  }, [accountId]);
 
-  // Use useMemo to memoize the context value
-  const firebaseContextValue = useMemo(() => ({ user, db }), [user, db]);
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   return (
-    <FirebaseContext.Provider value={firebaseContextValue}>
-      {children}
-    </FirebaseContext.Provider>
+    <div className="p-4">
+      <h2 className="text-2xl mb-4">Complete Your Stripe Onboarding</h2>
+      {link ? (
+        <a href={link} target="_blank" rel="noopener noreferrer" className="bg-blue-500 text-white p-2 rounded">
+          Complete Onboarding
+        </a>
+      ) : (
+        <p>Failed to generate onboarding link. Please try again later.</p>
+      )}
+    </div>
   );
 };
 
-// Define PropTypes for FirebaseProvider
-FirebaseProvider.propTypes = {
-  children: PropTypes.node.isRequired,
-};
-
-// Custom hook to use Firebase Context
-const useFirebase = () => {
-  const context = useContext(FirebaseContext);
-  
-  if (!context) {
-    throw new Error('useFirebase must be used within a FirebaseProvider');
-  }
-  
-  return context;
-};
-
-export {useFirebase} ;
+export default StripeOnboarding;
 
 
 ================================================================================
 
 Folder: hosting/src\context
-Filename: useFirebaseContext.jsx
+Filename: StripeContext.jsx
 Contents:
-import { useContext } from 'react';
-import { FirebaseContext } from './FirebaseContext';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useAuth } from './AuthContext';
+import { updateStripeStatusInDb, createAccountLink, createStripeConnectedAccount} from '../api/stripeApi';
+import { db } from '../firebase/firebaseConfig';
+import { doc, getDoc , updateDoc} from 'firebase/firestore';
+import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom'; // For navigation
+import PropTypes from 'prop-types';
 
-const useFirebaseContext = () => {
-  console.log('useFirebaseContext: Accessing Firebase context');
-  const context = useContext(FirebaseContext);
+// Create a context for Stripe-related data and functions
+const StripeContext = createContext();
 
-  if (!context) {
-    console.error('useFirebaseContext must be used within a FirebaseProvider');
-    throw new Error('useFirebaseContext must be used within a FirebaseProvider');
-  }
+export const useStripe = () => useContext(StripeContext);
 
-  return context;
+export const StripeProvider = ({ children }) => {
+  const { user } = useAuth();
+  const [stripeAccountId, setStripeAccountId] = useState(null);
+  const [stripeAccountStatus, setStripeAccountStatus] = useState('not_created');
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  useEffect(() => {
+    const fetchStripeData = async () => {
+      if (user?.uid) {
+        try {
+          const userRef = doc(db, 'users', user.uid);
+          const userDoc = await getDoc(userRef);
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            let accountId = userData.stripeAccountId || null;
+            
+            // If no Stripe account ID exists, create a new Stripe account
+            if (!accountId) {
+              const stripeData = await createStripeConnectedAccount(user.email); // Create a new Stripe account for the user
+              accountId = stripeData.accountId; // Assuming this field is returned by your API
+              await updateStripeStatusInDb(user.uid, 'not_completed');
+              await updateDoc(userRef, { stripeAccountId: accountId }); // Save the new Stripe account ID in Firestore
+            }
+  
+            setStripeAccountId(accountId);
+            setStripeAccountStatus(userData.stripeAccountStatus || 'not_completed');
+  
+            // Redirect to onboarding if the account status is not completed
+            if (userData.stripeAccountStatus === 'not_completed') {
+              const accountLink = await createAccountLink(accountId); 
+              navigate(`/stripe-onboarding/${accountId}`, { state: { accountLink } });
+            }
+          } else {
+            console.error('No user document found');
+            toast.error('No user document found. Please complete the profile first.');
+          }
+        } catch (error) {
+          console.error('Error fetching Stripe data:', error);
+          toast.error('Failed to load Stripe data.');
+        }
+      }
+    };
+  
+    fetchStripeData();
+  }, [user, navigate]);
+  const updateStripeStatus = async (status) => {
+    if (user?.uid) {
+      try {
+        await updateStripeStatusInDb(user.uid, status);
+        setStripeAccountStatus(status);
+        toast.success('Stripe status updated successfully.');
+      } catch (error) {
+        console.error('Error updating Stripe status:', error);
+        toast.error('Failed to update Stripe status.');
+      }
+    }
+  };
+
+  return (
+    <StripeContext.Provider value={{ stripeAccountId, stripeAccountStatus, setStripeAccountId, updateStripeStatus, loading }}>
+      {children}
+    </StripeContext.Provider>
+  );
 };
 
-export default useFirebaseContext;
+StripeProvider.propTypes = {
+  children: PropTypes.node.isRequired,
+};
 
+
+================================================================================
+
+Folder: hosting/src\context
+Filename: useStripeContext.jsx
+Contents:
+// src/contexts/StripeContext.jsx
+
+// Context Creation:
+
+// You create a StripeContext using createContext(). This context will hold the Stripe-related data and functions.
+// useStripe Hook:
+
+// This hook provides a convenient way to access the context values within your components. It uses useContext(StripeContext) to retrieve the values.
+// StripeProvider Component:
+
+// This component is responsible for providing the Stripe context to your application.
+// It uses the useAuth hook (assuming you have an authentication provider) to get the currentUser.
+// It initializes two state variables:
+// stripeAccountId: Stores the user's Stripe account ID.
+// stripeAccountStatus: Stores the status of the user's Stripe account (e.g., 'not_created', 'incomplete', 'verified').
+// Fetching Stripe Data:
+
+// Inside a useEffect hook, it fetches the user's Stripe data from Firestore when the currentUser changes.
+// It retrieves the user document from Firestore and updates the state variables with the fetched data.
+// updateStripeStatus Function:
+
+// This function allows you to update the user's Stripe account status in Firestore.
+// It takes the new status as an argument and updates the stripeAccountStatus field in the user's document.
+// Providing Context Values:
+
+// The StripeProvider wraps its children with StripeContext.Provider and passes the following values:
+// stripeAccountId
+// stripeAccountStatus
+// setStripeAccountId
+// updateStripeStatus
+import { useContext } from 'react';
+
+import { StripeContext } from './StripeContext';
+
+
+
+export function useStripeContext() {
+  const context = useContext(StripeContext);
+  if (!context) {
+    throw new Error('useStripeContext must be used within a StripeProvider');
+  }
+  return context;
+}
 
 
 
 ================================================================================
 
-Folder: hosting/src\firebase
-Filename: firebaseConfig.jsx
+Folder: hosting/src\hooks
+Filename: useFetchStripeData.jsx
 Contents:
-import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
+//useFetchStripeData(apiEndpoint, params): Reusable hook for fetching Stripe data.
+import { useState, useEffect } from 'react';
+import stripeApi from '../api/stripeApi';
 
-// Firebase configuration object containing keys and identifiers for your app
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
+export const useFetchStripeData = (endpoint, params = {}) => {
+  const [stripeData, setStripeData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const response = await stripeApi.get(endpoint, { params });
+        setStripeData(response.data);
+      } catch (error) {
+        setError(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [endpoint, params]);
+
+  return { stripeData, loading, error };
 };
-console.log(firebaseConfig);
+// src/hooks/useAuth.js
 
-// Initialize Firebase app
-const app = initializeApp(firebaseConfig);
+import { useState, useEffect } from 'react';
+import { auth } from '../firebase/firebaseConfig'; // Import only auth service
+import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { setDoc, doc } from 'firebase/firestore';
+import { db } from '../firebase/firebaseConfig'; // Import Firestore for profile management
 
-// Export Firebase services for use in the app
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export const storage = getStorage(app);
+const useAuth = () => {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    console.log('useAuth: Initializing authentication listener');
+
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setLoading(false);
+    });
+
+    return () => {
+      console.log('useAuth: Cleaning up authentication listener');
+      unsubscribe();
+    };
+  }, []);
+
+  const login = async (email, password) => {
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      setUser(userCredential.user);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const register = async (email, password, additionalData) => {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // Create user document in Firestore
+      await setDoc(doc(db, 'users', user.uid), {
+        email: user.email,
+        userType: 'host',
+        ...additionalData,
+      });
+
+      setUser(user);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const googleSignIn = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      await setDoc(doc(db, 'users', result.user.uid), {
+        email: result.user.email,
+        userType: 'host',
+      }, { merge: true });
+
+      setUser(result.user);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await signOut(auth);
+      setUser(null);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  return { user, loading, error, login, register, googleSignIn, logout };
+};
+
+export default useAuth;
+
+
+================================================================================
+
+Folder: hosting/src\hooks
+Filename: useStripe.jsx
+Contents:
+import { useEffect, useState } from 'react';
+import { useStripe as useStripeJs } from '@stripe/react-stripe-js';
+import {
+  createStripeConnectedAccount,
+  getStripeAccountStatus,
+  createAccountLink,
+  retrievePaymentIntent,
+  updateStripeStatusInDb
+} from '../api/stripeApi';
+
+export const useStripe = (user, clientSecret = null) => {
+  const [stripeAccountStatus, setStripeAccountStatus] = useState('not_created');
+  const [loading, setLoading] = useState(true);
+  const [email, setEmail] = useState('');
+  const [isLinkAuthorized, setIsLinkAuthorized] = useState(false);
+  const [error, setError] = useState(null);
+  const stripe = useStripeJs();
+
+  useEffect(() => {
+    const initializeStripe = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // Ensure the Stripe Account ID is available before checking status
+        if (!user.stripeAccountId) {
+          const stripeAccount = await createStripeConnectedAccount(user.email);
+          await updateStripeStatusInDb(user.uid, 'not_created');
+          user.stripeAccountId = stripeAccount.accountId; // Ensure user object is updated
+        }
+
+        if (user.stripeAccountId) {
+          const stripeAccountData = await getStripeAccountStatus(user.stripeAccountId);
+          setStripeAccountStatus(stripeAccountData);
+
+          if (stripeAccountData === 'not_created' || stripeAccountData === 'incomplete') {
+            const accountLink = await createAccountLink(user.stripeAccountId);
+            window.location.href = accountLink.url;
+          }
+        } else {
+          throw new Error('Stripe Account ID is required but not available.');
+        }
+
+        if (clientSecret) {
+          try {
+            const { paymentIntent } = await stripe.retrievePaymentIntent(clientSecret);
+            setEmail(paymentIntent.receipt_email || '');
+          } catch (err) {
+            console.error('Error retrieving payment intent:', err);
+            setError(err.message);
+          }
+        }
+      } catch (err) {
+        console.error('Error initializing Stripe:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initializeStripe();
+  }, [user, clientSecret, stripe]);
+
+  return {
+    stripeAccountStatus,
+    loading,
+    email,
+    isLinkAuthorized,
+    error,
+  };
+};
+
+export default useStripe;
 
 
 ================================================================================
 
 Folder: hosting/src\utils
-Filename: firebaseUtils.jsx
+Filename: stripeUtils.js
 Contents:
-// convertTimestamp(timestamp): Convert Firestore timestamp to JavaScript Date object.
-//Other reusable functions like data manipulation or utility helpers.
+// stripeConfig.js
+import { loadStripe } from '@stripe/stripe-js';
 
-// Convert Firestore timestamp to JavaScript Date object
-export const convertTimestamp = (timestamp) => {
-    if (!timestamp) return null;
-    return timestamp.toDate();
-  };
-  
+export const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLIC_KEY);
+
 
 ================================================================================
 
 Contents of app.jsx:
-// src/App.js
-import React, { useState, useEffect } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
-import { ChakraProvider } from '@chakra-ui/react';
-import { Elements } from '@stripe/react-stripe-js';
-import { loadStripe } from '@stripe/stripe-js';
+import React, { useState, useEffect } from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+
+import {
+  collection,
+  getDocs,
+  query,
+  where,
+  orderBy,
+  limit,
+  startAfter,
+} from "firebase/firestore";
+import { db } from "./firebase/firebaseConfig";
+import { ChakraProvider } from "@chakra-ui/react";
+import { Elements } from "@stripe/react-stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
 
 // Context Providers
-import { FirebaseProvider } from './context/FirebaseContext.jsx';
-import { ErrorBoundary } from './context/ErrorBoundary.jsx';
-import { MapsProvider } from './context/MapsContext.jsx';
-import { StripeProvider } from './context/StripeContext.jsx';
-import { AuthProvider } from './context/AuthContext.jsx';
+import { FirebaseProvider } from "./context/FirebaseContext.jsx";
+import { ErrorBoundary } from "./context/ErrorBoundary.jsx";
+import { MapsProvider } from "./context/MapsContext.jsx";
+import { StripeProvider } from "./context/StripeContext.jsx";
+import { AuthProvider } from "./context/AuthContext.jsx";
 
 // Components
-import Header from './components/Header.jsx';
-import LeftPanel from './components/LeftPanel.jsx';
-import RightPanel from './components/RightPanel.jsx';
-import Footer from './components/Footer.jsx';
-import SearchBar from './components/SearchBar.jsx';
-import Dashboard from './components/Dashboard.jsx';
-import ActiveContainer from './components/ActiveContainer.jsx';
-import MapComponent from './components/MapComponent.jsx';
+import Header from "./components/Header.jsx";
+import LeftPanel from "./components/LeftPanel.jsx";
+import RightPanel from "./components/RightPanel.jsx";
+import Footer from "./components/Footer.jsx";
+import Dashboard from "./components/Dashboard.jsx";
+import ActiveContainer from "./components/ActiveContainer.jsx";
+import MapComponent from "./components/MapComponent.jsx";
+import SignupForm from './components/Forms/SignupForm';
+import StripeOnboarding from './components/Forms/StripeOnboarding';
+import TermsAndConditions from './components/Forms/TermsAndConditions';
+import PostSignup from './components/Forms/PostSignup'; // Import new component
 
-// Stripe API functions
-import { 
-  handleCreateStripeOnboarding, 
-  handleCreateCheckoutSession, 
-  handleCapturePaymentIntent, 
-  handleCancelPaymentIntent 
-} from './api/stripeApi'; // Importing Stripe API functions
+// Firebase Config and API functions
+import {
+  handleCreateStripeOnboarding,
+  createStripeCheckoutSession, 
+  captureStripePaymentIntent, 
+  cancelStripePaymentIntent,
 
-// Styles
-import './App.css';
-
-// Firebase Config
-import { db } from './firebase/firebaseConfig';
+  handleCreateCheckoutSession,
+  handleCapturePaymentIntent,
+  handleCancelPaymentIntent,
+} from "./api/stripeApi";
 
 // Stripe Configuration
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
 const App = () => {
   const [darkMode, setDarkMode] = useState(false);
-  const [appMode, setAppMode] = useState('rabbit'); // 'rabbit' or 'host'
+  const [appMode, setAppMode] = useState("rabbit");
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [rideInProgress, setRideInProgress] = useState(false);
-  const [activeCategory, setActiveCategory] = useState('all');
-  const [viewType, setViewType] = useState('list');
+  const [activeCategory, setActiveCategory] = useState("all food");
+  const [viewType, setViewType] = useState("list");
   const [businesses, setBusinesses] = useState([]);
   const [filteredBusinesses, setFilteredBusinesses] = useState([]);
+  const [cachedBusinesses, setCachedBusinesses] = useState({});
   const [chatMessages, setChatMessages] = useState([]);
-  const [chatInput, setChatInput] = useState('');
-  const [userEmail, setUserEmail] = useState('test@example.com');
+  const [chatInput, setChatInput] = useState("");
+  const [userEmail] = useState("test@example.com");
   const [paymentIntentId, setPaymentIntentId] = useState(null);
-  const [paymentIntentStatus, setPaymentIntentStatus] = useState('');
-  const [message, setMessage] = useState(''); // State for displaying messages
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [hasMore, setHasMore] = useState(true);
+  const [searchDestination, setSearchDestination] = useState(null);
+  const [searchPickupLocation, setSearchPickupLocation] = useState(null);
 
-  // Fetch businesses data from Firebase
   useEffect(() => {
     const fetchBusinesses = async () => {
+      setLoading(true);
       try {
         const querySnapshot = await getDocs(collection(db, 'places'));
         const businessesData = querySnapshot.docs.map((doc) => ({
@@ -307,197 +804,262 @@ const App = () => {
         }));
         setBusinesses(businessesData);
         setFilteredBusinesses(businessesData);
+        setError('');
       } catch (error) {
         console.error('Error fetching businesses from Firebase:', error);
+        setError('Failed to load businesses');
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchBusinesses();
   }, []);
 
-  // Update filtered businesses based on the active category
   useEffect(() => {
-    if (activeCategory === 'all') {
+    if (cachedBusinesses[activeCategory]) {
+      setFilteredBusinesses(cachedBusinesses[activeCategory]);
+    } else if (activeCategory === 'all food') {
       setFilteredBusinesses(businesses);
     } else {
-      setFilteredBusinesses(businesses.filter((business) => business.category === activeCategory));
+      const filtered = businesses.filter((business) => business.category === activeCategory);
+      setFilteredBusinesses(filtered);
+      setCachedBusinesses((prevCache) => ({
+        ...prevCache,
+        [activeCategory]: filtered,
+      }));
     }
-  }, [activeCategory, businesses]);
+  }, [activeCategory, businesses, cachedBusinesses]);
 
-  // Handle accepting a ride
   const handleAccept = (ride) => {
     setSelectedItem(ride);
-    setIsRightPanelOpen(true); // Show right panel for details
+    setIsRightPanelOpen(true);
     setRideInProgress(true);
     setChatMessages([
-      { sender: 'guest', text: 'Hello! Looking forward to the ride.' },
-      { sender: 'host', text: 'Hi! I will be there in 5 minutes.' },
+      { sender: "guest", text: "Hello! Looking forward to the ride." },
+      { sender: "host", text: "Hi! I will be there in 5 minutes." },
     ]);
   };
 
-  // Handle selecting an item
   const handleSelectItem = (item) => {
     setSelectedItem(item);
-    setIsRightPanelOpen(true); // Show right panel for details
+    setSearchDestination(null);
+    setSearchPickupLocation(null);
   };
 
-  // Handle toggling the right panel
-  const handleToggleRightPanel = () => {
-    setIsRightPanelOpen(!isRightPanelOpen);
+  const handleSearchDestinationSelect = (destination) => {
+    setSearchDestination(destination);
+    setSelectedItem(null);
   };
 
-  // Handle sending a message in the chat
+  const handleSearchPickupSelect = (pickup) => {
+    setSearchPickupLocation(pickup);
+  };
+
   const sendMessage = () => {
     if (chatInput.trim()) {
-      const newMessage = { sender: 'host', text: chatInput };
+      const newMessage = { sender: "host", text: chatInput };
       setChatMessages((prevMessages) => [...prevMessages, newMessage]);
-      setChatInput('');
+      setChatInput("");
     }
   };
 
-  // Cancel an active ride
   const cancelRide = () => {
     setRideInProgress(false);
     setSelectedItem(null);
   };
 
-  // Handle booking a ride
-  const handleBookRide = () => {
-    console.log('Booking a ride');
+  const handleSettingsClick = () => {
+    console.log("Settings clicked");
   };
 
-  // Update payment intent
-  const handlePaymentIntentUpdate = (id, status) => {
-    setPaymentIntentId(id);
-    setPaymentIntentStatus(status);
-  };
-
-  // Stripe functions for handling payments and onboarding
   const startStripeOnboarding = async () => {
     try {
       await handleCreateStripeOnboarding(userEmail);
     } catch (error) {
-      console.error('Error starting Stripe onboarding:', error);
+      console.error("Error starting Stripe onboarding:", error);
       setMessage(error.message);
     }
   };
 
-  const createStripeCheckoutSession = async () => {
-    try {
-      const response = await handleCreateCheckoutSession(1000, userEmail); // Example amount in cents
-      setMessage(`Redirecting to Stripe Checkout...`);
-      window.location.href = response.url; // Redirect to Stripe Checkout
-    } catch (error) {
-      console.error('Error creating Stripe checkout session:', error);
-      setMessage(error.message);
-    }
-  };
+  // const createStripeCheckoutSession = async (amountInCents) => {
+  //   try {
+  //     const response = await handleCreateCheckoutSession(amountInCents);
+  //     setMessage("Redirecting to Stripe Checkout...");
+  //     window.location.href = response.url;
+  //   } catch (error) {
+  //     console.error("Error creating Stripe checkout session:", error);
+  //     setMessage(error.message);
+  //   }
+  // };
+  // const captureStripePaymentIntent = async () => {
+  //   try {
+  //     if (!paymentIntentId) {
+  //       throw new Error("Payment Intent ID is missing.");
+  //     }
+  //     const response = await handleCapturePaymentIntent(paymentIntentId);
+  //     setMessage(`Payment Intent captured: ${response.id}`);
+  //   } catch (error) {
+  //     console.error("Error capturing payment intent:", error);
+  //     setMessage(`Error: ${error.message}`);
+  //   }
+  // };
 
-  const captureStripePaymentIntent = async () => {
-    try {
-      const response = await handleCapturePaymentIntent(paymentIntentId, userEmail);
-      setMessage(`Payment Intent captured: ${response.id}`);
-    } catch (error) {
-      console.error('Error capturing payment intent:', error);
-      setMessage(error.message);
-    }
-  };
+  // const cancelStripePaymentIntent = async () => {
+  //   try {
+  //     const response = await handleCancelPaymentIntent(paymentIntentId);
+  //     setMessage(`Payment Intent canceled: ${response.id}`);
+  //   } catch (error) {
+  //     console.error("Error canceling payment intent:", error);
+  //     setMessage(error.message);
+  //   }
+  // };
 
-  const cancelStripePaymentIntent = async () => {
+  const loadMoreBusinesses = async () => {
+    if (!hasMore || loading) return;
+  
+    setLoading(true);
     try {
-      const response = await handleCancelPaymentIntent(paymentIntentId);
-      setMessage(`Payment Intent canceled: ${response.id}`);
+      const lastDoc = filteredBusinesses[filteredBusinesses.length - 1];
+      const nextQuery = query(
+        collection(db, 'places'),
+        where('category', '==', activeCategory === 'all food' ? '' : activeCategory),
+        orderBy('name'),
+        startAfter(lastDoc),
+        limit(15)
+      );
+  
+      const querySnapshot = await getDocs(nextQuery);
+      const newBusinesses = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+  
+      setFilteredBusinesses(prev => [...prev, ...newBusinesses]);
+      setHasMore(newBusinesses.length === 15);
     } catch (error) {
-      console.error('Error canceling payment intent:', error);
-      setMessage(error.message);
+      console.error('Error loading more businesses:', error);
+      setError('Failed to load more businesses');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className={`flex flex-col h-screen ${darkMode ? 'dark' : ''}`}>
-      <ErrorBoundary>
-        <FirebaseProvider>
-          <AuthProvider>
-            <ChakraProvider>
-              <MapsProvider apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
-                <Elements stripe={stripePromise}>
-                  <StripeProvider>
-                    <SearchBar
-                      userEmail={userEmail}
-                      paymentIntentId={paymentIntentId}
-                      paymentIntentStatus={paymentIntentStatus}
-                      onPaymentIntentUpdate={handlePaymentIntentUpdate}
-                      onBookRide={handleBookRide}
-                    />
-                    <Header
-                      darkMode={darkMode}
-                      setDarkMode={setDarkMode}
-                      appMode={appMode}
-                      setAppMode={setAppMode}
-                      setIsLeftPanelOpen={() => {}} // Not needed anymore since left panel is always open
-                      setIsRightPanelOpen={setIsRightPanelOpen}
-                    />
-                    <div className="flex flex-1 overflow-hidden">
-                      {/* Left Panel - Always Visible */}
-                      <LeftPanel
-                        isOpen={true}
-                        setIsOpen={() => {}}
+    <Router>
+      <div className={`flex flex-col h-screen ${darkMode ? 'dark' : ''} overflow-auto`}>
+        <ErrorBoundary>
+          <FirebaseProvider>
+            <AuthProvider>
+              <ChakraProvider>
+                <MapsProvider apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
+                  <Elements stripe={stripePromise}>
+                    <StripeProvider>
+                      <Header
+                        darkMode={darkMode}
+                        setDarkMode={setDarkMode}
                         appMode={appMode}
-                        handleAccept={handleAccept}
-                        handleSelectItem={handleSelectItem}
-                        activeCategory={activeCategory}
-                        setActiveCategory={setActiveCategory}
-                        viewType={viewType}
-                        setViewType={setViewType}
-                        rideInProgress={rideInProgress}
-                        handleSettingsClick={handleToggleRightPanel} // Toggle the right panel
-                        businesses={filteredBusinesses}
+                        setAppMode={setAppMode}
+                        setIsLeftPanelOpen={() => {}}
+                        setIsRightPanelOpen={setIsRightPanelOpen}
                       />
 
-                      {/* Main Content - Visible under the Right Panel */}
-                      <main className={`flex-1 flex flex-col relative transition-all duration-300 ${isRightPanelOpen ? 'mr-64' : ''}`}>
-                        {appMode === 'rabbit' && !rideInProgress && (
-                          <>
-                            <Dashboard />
-                            <MapComponent businesses={filteredBusinesses} />
-                          </>
-                        )}
-                        {appMode === 'rabbit' && rideInProgress && (
-                          <ActiveContainer
-                            chatMessages={chatMessages}
-                            chatInput={chatInput}
-                            setChatInput={setChatInput}
-                            sendMessage={sendMessage}
-                            cancelAction={cancelRide}
-                          />
-                        )}
-                        {appMode === 'host' && (
-                          <Dashboard />
-                        )}
-                      </main>
+                      <Routes>
+                        <Route
+                          path="/"
+                          element={
+                            <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
+                              <LeftPanel
+                                isOpen={true}
+                                setIsOpen={() => {}}
+                                appMode={appMode}
+                                handleAccept={handleAccept}
+                                handleSelectItem={handleSelectItem}
+                                activeCategory={activeCategory}
+                                setActiveCategory={setActiveCategory}
+                                viewType={viewType}
+                                setViewType={setViewType}
+                                rideInProgress={rideInProgress}
+                                businesses={filteredBusinesses}
+                                handleSettingsClick={handleSettingsClick}
+                                loadMoreBusinesses={loadMoreBusinesses}
+                                loading={loading}
+                                hasMore={hasMore}
+                              />
+                              {!isRightPanelOpen && (
+                                <main className="flex-1 flex flex-col relative transition-all duration-300 p-2 sm:p-4">
+                                  {appMode === "rabbit" && !rideInProgress && (
+                                    <>
+                                      <Dashboard
+                                        appMode={appMode}
+                                        selectedItem={selectedItem}
+                                        onSearchDestinationSelect={handleSearchDestinationSelect}
+                                        onSearchPickupSelect={handleSearchPickupSelect}
+                                        createStripeCheckoutSession={createStripeCheckoutSession}
+                                      />
+                                      <MapComponent
+                                        businesses={filteredBusinesses}
+                                        selectedPlace={selectedItem}
+                                        searchDestination={searchDestination}
+                                        searchPickupLocation={searchPickupLocation}
+                                        onSearchDestinationSelect={handleSearchDestinationSelect}
+                                        onSearchPickupSelect={handleSearchPickupSelect}
+                                      />
+                                    </>
+                                  )}
+                                  {appMode === "host" && rideInProgress && (
+                                    <ActiveContainer
+                                      chatMessages={chatMessages}
+                                      chatInput={chatInput}
+                                      setChatInput={setChatInput}
+                                      sendMessage={sendMessage}
+                                      cancelAction={cancelRide}
+                                    />
+                                  )}
+                                  {appMode === "host" && !rideInProgress && (
+                                    <Dashboard
+                                      appMode={appMode}
+                                      selectedItem={selectedItem}
+                                      onSearchDestinationSelect={handleSearchDestinationSelect}
+                                      onSearchPickupSelect={handleSearchPickupSelect}
+                                      createStripeCheckoutSession={createStripeCheckoutSession}
+                                    />
+                                  )}
+                                </main>
+                              )}
+                              {isRightPanelOpen && (
+                                <RightPanel
+                                  isOpen={isRightPanelOpen}
+                                  setIsOpen={setIsRightPanelOpen}
+                                  selectedItem={selectedItem}
+                                  appMode={appMode}
+                                  startStripeOnboarding={startStripeOnboarding}
+                                  createStripeCheckoutSession={createStripeCheckoutSession}
+                                  captureStripePaymentIntent={captureStripePaymentIntent}
+                                  cancelStripePaymentIntent={cancelStripePaymentIntent}
+                                  message={message}
+                                />
+                              )}
+                            </div>
+                          }
+                        />
 
-                      {/* Right Panel - Toggles visibility */}
-                      <RightPanel
-                        isOpen={isRightPanelOpen}
-                        setIsOpen={setIsRightPanelOpen}
-                        selectedItem={selectedItem}
-                        appMode={appMode}
-                        startStripeOnboarding={startStripeOnboarding}
-                        createStripeCheckoutSession={createStripeCheckoutSession}
-                        captureStripePaymentIntent={captureStripePaymentIntent}
-                        cancelStripePaymentIntent={cancelStripePaymentIntent}
-                        message={message}
-                      />
-                    </div>
-                    <Footer />
-                  </StripeProvider>
-                </Elements>
-              </MapsProvider>
-            </ChakraProvider>
-          </AuthProvider>
-        </FirebaseProvider>
-      </ErrorBoundary>
-    </div>
+                        <Route path="/signup" element={<SignupForm />} />
+                        <Route path="/stripe-onboarding/:accountId" element={<StripeOnboarding />} />
+                        <Route path="/dashboard" element={<Dashboard />} />
+                        <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
+                        <Route path="/post-signup" element={<PostSignup />} /> {/* New Route */}
+                      </Routes>
+                      <Footer />
+                    </StripeProvider>
+                  </Elements>
+                </MapsProvider>
+              </ChakraProvider>
+            </AuthProvider>
+          </FirebaseProvider>
+        </ErrorBoundary>
+      </div>
+    </Router>
   );
 };
 

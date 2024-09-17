@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react'; // Import useState only once
 import { useStripe as useStripeJs } from '@stripe/react-stripe-js';
 import {
   createStripeConnectedAccount,

@@ -1,6 +1,6 @@
 // src/api/auth.js
 
-import admin from '../firebase/adminConfig';
+import admin from '../hooks/firebase/adminConfig';
 import logger from '../utils/logger'; // Import the custom logger
 
 // Middleware function to verify Firebase token and attach user information to the request
@@ -24,3 +24,5 @@ const verifyToken = async (req, res, next) => {
 };
 
 export default verifyToken;
+
+

@@ -15,3 +15,5 @@ export const initializeMap = (mapElement, options) => {
     });
     return marker;
   };  
+
+  

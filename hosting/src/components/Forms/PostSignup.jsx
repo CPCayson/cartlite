@@ -1,50 +1,122 @@
+import React, { useState, useEffect } from "react";
+import { useAuth } from "../../context/AuthContext"; // Import the AuthContext
 
-import React, { useEffect, useState } from 'react';
-import { useAuth } from '../../context/AuthContext'; // Assuming you have an AuthContext
-import { useStripe } from '../../context/StripeContext'; // Assuming you have a StripeContext
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@chakra-ui/react';
-import { createStripeConnectedAccount_test } from '../../api/stripeApi'; // Your Stripe API function
+export default function PostSignup() {
+  const [accountCreatePending, setAccountCreatePending] = useState(false);
+  const [error, setError] = useState(false);
+  const [connectedAccountId, setConnectedAccountId] = useState(null);
+  const [stripeAccountStatus, setStripeAccountStatus] = useState(null);
+  const { user } = useAuth(); // Get the current user from AuthContext
 
-const PostSignup = () => {
-  const { user } = useAuth(); // Get user from context
-  const { stripeAccountStatus, setStripeAccountId } = useStripe(); // Get Stripe account status from context
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
-
-  // Redirect if user is already onboarded
+  // Fetch user data on component mount and when the user object updates
   useEffect(() => {
-    if (stripeAccountStatus === 'active') {
-      navigate('/dashboard'); // Redirect to dashboard if Stripe is already active
+    if (user?.email) {
+      fetchUserData(user.email);
     }
-  }, [stripeAccountStatus, navigate]);
+  }, [user]);
 
-  const handleOnboarding = async () => {
-    setLoading(true);
+  // Fetch the user's Stripe account data from the backend
+  const fetchUserData = async (email) => {
     try {
-      const accountData = await createStripeConnectedAccount_test(user.email); // Call your API to create a Stripe account
-      setStripeAccountId(accountData.stripeAccountId); // Update Stripe account ID in context
-      window.location.href = accountData.onboardingUrl; // Redirect to Stripe onboarding
+      setAccountCreatePending(true);
+      const token = await user.getIdToken(); // Get the current user's authentication token
+
+      const response = await fetch(`/api/user/${email}`, {
+        headers: {
+          "Authorization": `Bearer ${token}`,  // Include the authentication token in the request
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch user data: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      setConnectedAccountId(data.stripeAccountId);  // Set the connected Stripe Account ID
+      setStripeAccountStatus(data.stripeAccountStatus);  // Set the Stripe Account status
     } catch (error) {
-      console.error('Error during Stripe onboarding:', error);
-      setLoading(false);
+      console.error("Error fetching user data:", error);
+      setError(true);
+    } finally {
+      setAccountCreatePending(false);
+    }
+  };
+
+  // Handle Stripe onboarding or dashboard redirection
+  const handleOnboardingOrDashboard = async () => {
+    try {
+      setAccountCreatePending(true);
+      setError(false);
+
+     // const token = await user.getIdToken(); // Get the current user's authentication token
+
+      if (!connectedAccountId || stripeAccountStatus === 'incomplete') {
+        // If account is incomplete, create an onboarding session
+        const sessionResponse = await fetch("/api/create-account-session", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer acct_1PxVQjPxtP6CqxpM",  // Include token in headers
+          },
+          body: JSON.stringify({ accountId: connectedAccountId, email: user.email }),
+        });
+
+        if (!sessionResponse.ok) {
+          const sessionErrorText = await sessionResponse.text();
+          throw new Error(`HTTP error! status: ${sessionResponse.status}, body: ${sessionErrorText}`);
+        }
+
+        const sessionJson = await sessionResponse.json();
+        if (sessionJson.url) {
+          window.location.href = sessionJson.url;  // Redirect to Stripe onboarding link
+        }
+      } else {
+        // If onboarding is complete, open the Stripe Express Dashboard
+        const dashboardResponse = await fetch("/api/create-dashboard-link", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,  // Include token in headers
+          },
+          body: JSON.stringify({ accountId: connectedAccountId }),
+        });
+
+        if (!dashboardResponse.ok) {
+          const dashboardErrorText = await dashboardResponse.text();
+          throw new Error(`HTTP error! status: ${dashboardResponse.status}, body: ${dashboardErrorText}`);
+        }
+
+        const dashboardJson = await dashboardResponse.json();
+        if (dashboardJson.url) {
+          window.location.href = dashboardJson.url;  // Redirect to the Stripe Dashboard link
+        }
+      }
+    } catch (error) {
+      console.error("Error handling onboarding or dashboard:", error);
+      setError(true);
+    } finally {
+      setAccountCreatePending(false);
     }
   };
 
   return (
-    <div className="p-4">
-      <h2 className="text-2xl mb-4">You're now logged in!</h2>
-      <p className="mb-4">Let's get started by setting up your payment details with Stripe.</p>
-      <Button 
-        colorScheme="teal" 
-        onClick={handleOnboarding} 
-        isLoading={loading}
-        loadingText="Starting Onboarding..."
-      >
-        Begin Stripe Onboarding
-      </Button>
+    <div className="container">
+      <div className="banner">
+        <h2>cartRabbit</h2>
+      </div>
+      <div className="content">
+        <h2>{stripeAccountStatus === 'incomplete' ? 'Finish your Stripe onboarding' : 'Access your Stripe Dashboard'}</h2>
+        <p>cartRabbit is the world's leading air travel platform: join our team of pilots to help people travel faster.</p>
+        {!accountCreatePending && (
+          <div>
+            <button onClick={handleOnboardingOrDashboard}>
+              {stripeAccountStatus === 'incomplete' ? 'Continue Onboarding' : 'Open Dashboard'}
+            </button>
+          </div>
+        )}
+        {accountCreatePending && <p>Loading...</p>}
+        {error && <p className="error">Something went wrong! Please try again.</p>}
+      </div>
     </div>
   );
-};
-
-export default PostSignup;
+}

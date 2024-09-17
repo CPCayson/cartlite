@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import PropTypes from 'prop-types';
-import { auth, db } from '../firebase/firebaseConfig'; 
+import { auth, db } from '../hooks/firebase/firebaseConfig'; 
 
 // Create a Firebase Context
 const FirebaseContext = createContext(null);

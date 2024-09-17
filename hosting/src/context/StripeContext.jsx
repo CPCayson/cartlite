@@ -1,82 +1,83 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
-import { updateStripeStatusInDb, createAccountLink, createStripeConnectedAccount_test} from '../api/stripeApi';
-import { db } from '../firebase/firebaseConfig';
-import { doc, getDoc , updateDoc} from 'firebase/firestore';
+import { db } from '../hooks/firebase/firebaseConfig';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { createStripeConnectedAccount } from '../api/stripeApi';
 import { toast } from 'react-toastify';
-import { useNavigate } from 'react-router-dom'; // For navigation
-import PropTypes from 'prop-types';
 
-// Create a context for Stripe-related data and functions
 const StripeContext = createContext();
 
 export const useStripe = () => useContext(StripeContext);
 
 export const StripeProvider = ({ children }) => {
   const { user } = useAuth();
-  const [stripeAccountId, setStripeAccountId] = useState(null);
   const [stripeAccountStatus, setStripeAccountStatus] = useState('not_created');
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+
   useEffect(() => {
     const fetchStripeData = async () => {
-      if (user?.uid) {
+      if (user?.email) {
         try {
-          const userRef = doc(db, 'users', user.uid);
-          const userDoc = await getDoc(userRef);
-          if (userDoc.exists()) {
-            const userData = userDoc.data();
-            let accountId = userData.stripeAccountId || null;
-            
-            // If no Stripe account ID exists, create a new Stripe account
-            if (!accountId) {
-              const stripeData = await createStripeConnectedAccount_test(user.email); // Create a new Stripe account for the user
-              accountId = stripeData.accountId; // Assuming this field is returned by your API
-              await updateStripeStatusInDb(user.uid, 'not_completed');
-              await updateDoc(userRef, { stripeAccountId: accountId }); // Save the new Stripe account ID in Firestore
+          setLoading(true);
+          const userRef = doc(db, 'users', user.email);
+          let userDoc = await getDoc(userRef);
+          
+          if (!userDoc.exists()) {
+            // If the user document doesn't exist, create it
+            await setDoc(userRef, {
+              email: user.email,
+              stripeAccountStatus: 'not_created',
+            });
+            userDoc = await getDoc(userRef);
+          }
+
+          const userData = userDoc.data();
+          setStripeAccountStatus(userData.stripeAccountStatus || 'not_created');
+
+          if (userData.stripeAccountStatus !== 'active') {
+            // Only proceed with Stripe account creation if not already active
+            try {
+              const stripeData = await createStripeConnectedAccount(user.email);
+              // Update the user document with the new Stripe account ID
+              await setDoc(userRef, { stripeAccountId: stripeData.stripeAccountId }, { merge: true });
+              setStripeAccountStatus('pending');
+            } catch (stripeError) {
+              console.error('Error creating Stripe account:', stripeError);
+              toast.error('Failed to create Stripe account. Please try again later.');
             }
-  
-            setStripeAccountId(accountId);
-            setStripeAccountStatus(userData.stripeAccountStatus || 'not_completed');
-  
-            // Redirect to onboarding if the account status is not completed
-            if (userData.stripeAccountStatus === 'not_completed') {
-              const accountLink = await createAccountLink(accountId); 
-              navigate(`/stripe-onboarding/${accountId}`, { state: { accountLink } });
-            }
-          } else {
-            console.error('No user document found');
-            toast.error('No user document found. Please complete the profile first.');
           }
         } catch (error) {
           console.error('Error fetching Stripe data:', error);
-          toast.error('Failed to load Stripe data.');
+          toast.error('Failed to load user data.');
+        } finally {
+          setLoading(false);
         }
+      } else {
+        setLoading(false);
       }
     };
-  
+
     fetchStripeData();
-  }, [user, navigate]);
-  const updateStripeStatus = async (status) => {
-    if (user?.uid) {
+  }, [user]);
+
+  const beginStripeOnboarding = async () => {
+    if (user?.email) {
       try {
-        await updateStripeStatusInDb(user.uid, status);
-        setStripeAccountStatus(status);
-        toast.success('Stripe status updated successfully.');
+        const stripeData = await createStripeConnectedAccount(user.email);
+        window.location.href = stripeData.onboardingUrl;
       } catch (error) {
-        console.error('Error updating Stripe status:', error);
-        toast.error('Failed to update Stripe status.');
+        console.error('Error starting Stripe onboarding:', error);
+        toast.error('Failed to start Stripe onboarding. Please try again.');
       }
+    } else {
+      toast.error('User information is missing. Please ensure youre logged in.');
     }
   };
 
   return (
-    <StripeContext.Provider value={{ stripeAccountId, stripeAccountStatus, setStripeAccountId, updateStripeStatus, loading }}>
+    <StripeContext.Provider value={{ stripeAccountStatus, loading, beginStripeOnboarding }}>
       {children}
     </StripeContext.Provider>
   );
 };
 
-StripeProvider.propTypes = {
-  children: PropTypes.node.isRequired,
-};

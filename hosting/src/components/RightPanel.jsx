@@ -1,149 +1,175 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext'; // Adjust path as necessary
 import PropTypes from 'prop-types';
-import { Button, Spinner, Input, FormControl, FormLabel, Select, Box, Text } from '@chakra-ui/react';
-import useAuthorization from '../hooks/useAuthorization';
-import TabbedSettingsForm from './Forms/TabbedSettingsForm';
+import { Button, Box, VStack, HStack, Text, useColorModeValue, Spinner } from '@chakra-ui/react';
+import { ChevronRight, ChevronLeft, Maximize2, Minimize2 } from 'lucide-react';
 
-const RightPanel = ({ isOpen, setIsOpen, selectedItem, appMode, adjustHeightForBlueMoon, userData, cartData }) => {
-  const {
-    user,
-    authLoading,
-    formError,
-    email,
-    password,
-    phoneNumber,
-    isOnboarding,
-    authMethod,
-    handleToggleForm,
-    handleAuthAction,
-    handleLogout,
-    setEmail,
-    setPassword,
-    setPhoneNumber,
-    setAuthMethod,
-    redirecting,
-    redirectToStripeOnboarding,
-  } = useAuthorization();
-
-  const [loading, setLoading] = useState(false);
-
-  // Ensure props are available
-  if (!userData || !cartData) {
-    return null; // or provide a fallback UI
-  }
-
-  if (authLoading || redirecting || loading) {
-    return (
-      <div className="flex justify-center items-center h-full">
-        <Spinner size="lg" />
-      </div>
-    );
-  }
+const RideRequestDetails = ({ rideRequest }) => {
+  console.log('RideRequestDetails: Rendering with rideRequest:', rideRequest);
+  if (!rideRequest) return <Text>No ride request data available.</Text>;
 
   return (
-    <div
-      style={{
-        width: isOpen ? '50%' : '0',
-        height: adjustHeightForBlueMoon ? '70%' : '100%',
-        transition: 'all 0.3s ease-in-out',
-        overflow: 'hidden',
-        backgroundColor: 'white',
-        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-      }}
+    <VStack align="start" spacing={2}>
+      <Text fontWeight="bold">Ride Request Details:</Text>
+      <Text>Status: {rideRequest.status ?? 'N/A'}</Text>
+      <Text>Ride Fee: ${rideRequest.rideFee?.toFixed(2) ?? 'N/A'}</Text>
+      <Text>From: {rideRequest.user_location ?? 'N/A'}</Text>
+      <Text>To: {rideRequest.destination_location ?? 'N/A'}</Text>
+      <Text>Created At: {rideRequest.createdAt?.toDate().toLocaleString() ?? 'N/A'}</Text>
+      <Text>User Email: {rideRequest.user_email ?? 'N/A'}</Text>
+      <Text>User ID: {rideRequest.user_uid ?? 'N/A'}</Text>
+    </VStack>
+  );
+};
+
+const RightPanel = ({
+  isOpen,
+  setIsOpen,
+  appMode,
+  darkMode,
+  rideRequestId,
+  rideRequest,
+  loading,
+  error,
+  fetchMostRecentRideRequest,
+}) => {
+  console.log('RightPanel: Component rendering start');
+
+  const { user } = useAuth(); // Access the session
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const [localError, setLocalError] = useState(null);
+
+  useEffect(() => {
+    console.log('Component mounted, calling fetchMostRecentRideRequest');
+    fetchMostRecentRideRequest();
+  }, [fetchMostRecentRideRequest]);
+
+  useEffect(() => {
+    if (user) {
+      console.log('RightPanel: User is logged in:', user.email);
+    } else {
+      console.log('RightPanel: No user is logged in');
+    }
+  }, [user]);
+
+  console.log('RightPanel: Current state', {
+    isOpen,
+    appMode,
+    darkMode,
+    rideRequestId,
+    rideRequest,
+    loading,
+    error,
+  });
+
+  const bgColor = useColorModeValue(darkMode ? 'gray.800' : 'white', 'gray.800');
+  const borderColor = useColorModeValue(darkMode ? 'gray.600' : 'gray.200', 'gray.600');
+  const textColor = darkMode ? 'white' : 'black';
+
+  const toggleFullScreen = () => {
+    console.log('RightPanel: Toggling fullscreen');
+    setIsFullScreen(!isFullScreen);
+  };
+
+  const panelWidth = isOpen ? (isFullScreen ? '100%' : '50%') : '0';
+
+  return (
+    <Box
+      width={panelWidth}
+      height="100%"
+      transition="all 0.3s ease-in-out"
+      overflow="hidden"
+      backgroundColor={bgColor}
+      borderLeft={isOpen ? `1px solid ${borderColor}` : 'none'}
+      position={isFullScreen ? 'fixed' : 'relative'}
+      top={isFullScreen ? 0 : 'auto'}
+      right={isFullScreen ? 0 : 'auto'}
+      zIndex={isFullScreen ? 1000 : 'auto'}
+      color={textColor}
     >
       {isOpen && (
-        <div className="p-4">
-          <h2 className="text-xl font-bold">{selectedItem ? selectedItem.name : 'Details'}</h2>
-          {selectedItem && <p>{selectedItem.description}</p>}
+        <VStack spacing={4} align="stretch" p={4}>
+          <HStack justifyContent="space-between">
+            <Button
+              leftIcon={isOpen ? <ChevronRight /> : <ChevronLeft />}
+              onClick={() => setIsOpen(!isOpen)}
+              size="sm"
+            >
+              {isOpen ? 'Close' : 'Open'}
+            </Button>
+            <Button
+              leftIcon={isFullScreen ? <Minimize2 /> : <Maximize2 />}
+              onClick={toggleFullScreen}
+              size="sm"
+            >
+              {isFullScreen ? 'Exit Fullscreen' : 'Fullscreen'}
+            </Button>
+          </HStack>
 
-          {/* Conditional rendering based on appMode */}
-          {appMode === 'host' ? (
-            <>
-              <TabbedSettingsForm
-                userData={userData}
-                cartData={cartData}
-                onSaveUserData={() => {/* Implement handleSaveUserData */}}
-                onSaveCartData={() => {/* Implement handleSaveCartData */}}
-              />
-              <Button colorScheme="red" onClick={handleLogout} mt={4}>
-                Logout
-              </Button>
-            </>
+          {user ? (
+            appMode === 'host' ? (
+              <VStack spacing={4} align="stretch">
+                <Text fontSize="xl" fontWeight="bold">Host Controls</Text>
+                <Button colorScheme="blue">Accept Ride</Button>
+                <Button colorScheme="green">Start Ride</Button>
+                <Button colorScheme="red">End Ride</Button>
+              </VStack>
+            ) : (
+              <>
+                {loading ? (
+                  <Spinner />
+                ) : localError || error ? (
+                  <Text color="red.500">{localError || error}</Text>
+                ) : rideRequest ? (
+                  <RideRequestDetails rideRequest={rideRequest} />
+                ) : (
+                  <Text>No active ride request found.</Text>
+                )}
+              </>
+            )
           ) : (
-            <>
-              {/* Onboarding and Authentication Form */}
-              <Box>
-                <FormControl id="auth-method">
-                  <FormLabel>Authentication Method</FormLabel>
-                  <Select value={authMethod} onChange={(e) => setAuthMethod(e.target.value)}>
-                    <option value="email">Email</option>
-                    <option value="phone">Phone</option>
-                  </Select>
-                </FormControl>
-
-                {authMethod === 'email' && (
-                  <>
-                    <FormControl id="email" mt={4}>
-                      <FormLabel>Email</FormLabel>
-                      <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-                    </FormControl>
-                    <FormControl id="password" mt={4}>
-                      <FormLabel>Password</FormLabel>
-                      <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-                    </FormControl>
-                  </>
-                )}
-
-                {authMethod === 'phone' && (
-                  <>
-                    <FormControl id="phone-number" mt={4}>
-                      <FormLabel>Phone Number</FormLabel>
-                      <Input type="tel" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} />
-                    </FormControl>
-                    <div id="recaptcha-container"></div>
-                  </>
-                )}
-
-                {formError && <Text color="red.500">{formError}</Text>}
-
-                <Button mt={4} colorScheme="blue" onClick={handleAuthAction}>
-                  {isOnboarding ? 'Register' : 'Login'}
-                </Button>
-
-                <Button variant="link" mt={2} onClick={handleToggleForm}>
-                  {isOnboarding ? 'Already have an account? Login' : 'New user? Register here'}
-                </Button>
-
-                {/* Onboarding Button */}
-                {user && (
-                  <Button mt={4} colorScheme="teal" onClick={() => redirectToStripeOnboarding(user)}>
-                    Start Stripe Onboarding
-                  </Button>
-                )}
-              </Box>
-            </>
+            <VStack align="start" spacing={2}>
+              <Text>You are browsing as a guest.</Text>
+              <Text>Please sign in to access more features.</Text>
+            </VStack>
           )}
 
-          <Button onClick={() => setIsOpen(false)} mt={4}>
-            Close
-          </Button>
-        </div>
+          <VStack align="start" spacing={2} mt={4}>
+            <Text fontWeight="bold">Debug Information:</Text>
+            <Text>Ride Request ID: {rideRequestId || 'None'}</Text>
+            <Text>Loading: {loading ? 'Yes' : 'No'}</Text>
+            <Text>Error: {localError || error || 'None'}</Text>
+            <Text>App Mode: {appMode}</Text>
+            <Text>Dark Mode: {darkMode ? 'On' : 'Off'}</Text>
+          </VStack>
+        </VStack>
       )}
-    </div>
+    </Box>
   );
+};
+
+RideRequestDetails.propTypes = {
+  rideRequest: PropTypes.shape({
+    status: PropTypes.string,
+    rideFee: PropTypes.number,
+    user_location: PropTypes.string,
+    destination_location: PropTypes.string,
+    createdAt: PropTypes.object,
+    user_email: PropTypes.string,
+    user_uid: PropTypes.string,
+  }),
 };
 
 RightPanel.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   setIsOpen: PropTypes.func.isRequired,
-  selectedItem: PropTypes.shape({
-    name: PropTypes.string,
-    description: PropTypes.string,
-  }),
-  appMode: PropTypes.oneOf(['rabbit', 'host']).isRequired,
-  adjustHeightForBlueMoon: PropTypes.bool,
-  userData: PropTypes.object.isRequired,
-  cartData: PropTypes.object.isRequired,
+  appMode: PropTypes.string.isRequired,
+  darkMode: PropTypes.bool.isRequired,
+  rideRequestId: PropTypes.string,
+  rideRequest: PropTypes.object,
+  loading: PropTypes.bool.isRequired,
+  error: PropTypes.string,
+  fetchMostRecentRideRequest: PropTypes.func.isRequired,
 };
 
 export default RightPanel;

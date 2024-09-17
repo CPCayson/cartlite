@@ -1,0 +1,296 @@
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T06:08:04.261Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T06:08:10.003Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T06:10:59.823Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T06:11:05.418Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T15:37:06.335Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T15:37:10.892Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T15:41:30.072Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T15:41:36.239Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T15:53:49.717Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T15:53:56.088Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T16:03:15.740Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T16:03:22.040Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T16:11:00.064Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T16:11:05.847Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T16:13:34.459Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T16:13:39.821Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T16:19:18.277Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T16:19:24.766Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T16:33:24.265Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T16:33:28.262Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T16:39:37.630Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T16:39:45.656Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T16:48:01.839Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T16:48:07.803Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T16:52:24.873Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T16:52:32.706Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T16:58:23.129Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T16:58:31.620Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T18:09:34.635Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T18:09:38.365Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T18:11:56.746Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T18:11:59.904Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T18:13:53.636Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T18:13:57.374Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T18:17:46.996Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T18:17:51.382Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T18:25:11.542Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T18:25:18.011Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T18:29:41.097Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T18:29:47.401Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T18:34:05.970Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T18:34:11.066Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T18:45:21.631Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T18:45:28.023Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T18:53:41.114Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T18:53:47.214Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T18:56:22.935Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T18:56:28.999Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T19:16:51.746Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T19:16:57.129Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T19:22:53.219Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T19:22:58.619Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T19:41:30.013Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T19:41:36.231Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T19:49:28.922Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T19:49:38.393Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T20:06:48.076Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T20:06:57.574Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T20:13:22.209Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T20:13:27.731Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T20:19:49.560Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T20:19:58.794Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T20:22:29.025Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T20:22:42.019Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T20:29:05.209Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T20:29:16.247Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T20:42:26.981Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T20:42:32.632Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T20:57:24.996Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T20:57:33.015Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T21:32:24.509Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T21:32:29.815Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T21:46:07.711Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T21:46:14.079Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T21:50:48.852Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T21:50:54.625Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T21:57:31.772Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T21:57:38.363Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T22:04:51.362Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T22:04:59.029Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T22:07:50.814Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T22:07:57.686Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T22:09:43.112Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T22:09:49.459Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T22:12:42.639Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T22:12:48.383Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T22:23:51.453Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T22:24:00.261Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T22:27:15.445Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T22:27:31.705Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T22:39:11.158Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T22:39:18.473Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T22:44:17.619Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T22:44:23.293Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T22:48:18.548Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T22:48:27.432Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T22:52:33.539Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T22:52:43.315Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T22:56:46.140Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T22:56:59.843Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-11T23:00:10.700Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-11T23:00:21.221Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-12T01:56:51.587Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-12T01:56:59.945Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-12T02:06:42.716Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-12T02:06:49.254Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-12T02:24:41.627Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-12T02:24:45.632Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-12T02:35:46.027Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-12T02:35:50.459Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-12T02:46:31.222Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-12T02:46:35.857Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-12T02:48:22.949Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-12T02:48:27.217Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-12T02:56:04.294Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-12T02:56:09.741Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-12T03:37:32.872Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-12T03:37:44.007Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-12T03:50:33.671Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-12T03:50:43.501Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-12T04:10:35.235Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-12T04:10:44.564Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-12T04:20:58.020Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-12T04:21:07.885Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-12T04:33:40.898Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-12T04:33:51.087Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-12T04:38:11.629Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-12T04:38:20.719Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-12T04:48:32.245Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-12T04:48:40.549Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-12T05:24:56.834Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-12T05:25:00.435Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-12T05:31:36.160Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-12T05:31:41.130Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-12T05:41:57.532Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-12T05:42:53.240Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-12T06:05:03.733Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-12T06:05:14.118Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-12T07:11:04.756Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-12T07:11:08.535Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-12T07:24:31.675Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-12T07:24:38.268Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-14T05:52:22.723Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-14T05:52:26.295Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-14T06:03:22.882Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-14T06:03:28.266Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-14T06:05:59.769Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-14T06:06:04.255Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-14T06:07:22.693Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-14T06:07:27.496Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-14T06:25:14.202Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-14T06:25:20.060Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-14T06:54:59.905Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-14T06:55:07.317Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-14T06:59:09.127Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-14T06:59:17.214Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-14T07:04:00.577Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-14T07:04:05.335Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-14T07:06:03.870Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-14T07:06:08.746Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-14T07:07:38.883Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-14T07:07:44.115Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-14T07:29:19.219Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-14T07:29:25.176Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-14T07:33:14.660Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-14T07:33:23.213Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-14T08:07:36.908Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-14T08:07:40.512Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-14T08:15:50.247Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-14T08:15:54.617Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-14T21:01:32.890Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-14T21:01:37.723Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-14T21:20:43.457Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-14T21:20:47.575Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-14T21:55:47.448Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-14T21:55:51.136Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-14T22:19:56.674Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-14T22:20:00.366Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-14T22:28:15.713Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-14T22:28:19.372Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-14T22:38:05.952Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-14T22:38:09.603Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-14T23:45:03.618Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-14T23:45:07.588Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-14T23:48:06.358Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-14T23:48:12.076Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-14T23:57:36.022Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-14T23:57:39.735Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-15T00:08:38.993Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-15T00:08:45.661Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-15T00:15:41.244Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-15T00:15:44.583Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-15T00:19:03.535Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-15T00:19:07.170Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-15T01:05:57.271Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-15T01:06:00.771Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-15T01:22:59.752Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-15T01:23:03.425Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-15T01:25:21.102Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-15T01:25:26.168Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-15T01:34:43.252Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-15T01:34:46.687Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-15T18:38:37.283Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-15T18:39:00.566Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-15T18:50:05.620Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-15T18:50:11.528Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-15T19:00:13.441Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-15T19:00:17.390Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-15T19:08:24.435Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-15T19:08:28.333Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-15T19:14:01.043Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-15T19:14:06.871Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-15T19:19:12.334Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-15T19:19:18.221Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-15T19:35:39.824Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-15T19:35:47.137Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-15T19:59:54.314Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-15T19:59:58.361Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-16T12:49:04.814Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-16T12:49:08.671Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-16T13:01:04.448Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-16T13:01:12.157Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-16T13:15:53.225Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-16T13:15:57.073Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-16T14:20:17.901Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-16T14:20:29.405Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-16T14:23:13.314Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-16T14:23:24.222Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-16T14:39:10.992Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-16T14:39:17.061Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-16T14:47:23.609Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-16T14:47:37.355Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-16T15:55:57.836Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-16T15:56:01.509Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-16T16:06:04.619Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-16T16:06:09.787Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-16T16:09:28.969Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-16T16:09:32.635Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-16T16:23:28.952Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-16T16:23:32.537Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-16T17:40:55.531Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-16T17:40:58.567Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-16T17:49:19.144Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-16T17:49:22.475Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-16T17:53:23.989Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-16T17:53:28.706Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-16T20:07:50.358Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-16T20:07:56.479Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-16T20:26:39.795Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-16T20:26:45.671Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-16T20:44:31.135Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-16T20:44:38.084Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-16T20:50:35.898Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-16T20:50:44.119Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-16T21:03:57.848Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-16T21:04:02.824Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-16T22:06:23.617Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-16T22:06:27.957Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-16T23:02:53.363Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-16T23:02:57.939Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-16T23:12:31.295Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-16T23:12:38.083Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-16T23:28:39.714Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-16T23:28:45.138Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-16T23:57:47.906Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-16T23:57:52.295Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-17T02:02:26.865Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-17T02:02:30.777Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-17T02:05:35.093Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-17T02:05:40.220Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-17T02:13:37.472Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-17T02:13:45.404Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-17T02:19:05.284Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-17T02:19:09.156Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-17T02:21:52.006Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-17T02:21:55.861Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-17T03:16:45.043Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-17T03:16:53.654Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-17T03:21:39.435Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-17T03:21:47.404Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-17T03:49:37.450Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-17T03:49:43.210Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-17T03:55:31.590Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-17T03:55:40.626Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-17T04:17:28.448Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-17T04:17:38.532Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-17T04:19:31.068Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-17T04:19:37.439Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-17T04:51:50.182Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-17T04:51:57.850Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-17T05:01:59.018Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-17T05:02:02.543Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-17T05:26:55.504Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-17T05:27:00.782Z"}
+{"error":"Cannot read properties of undefined (reading 'VERSION')","level":"error","message":"Error checking Stripe API version","timestamp":"2024-09-17T05:35:09.579Z"}
+{"level":"info","message":"Firebase Admin SDK initialized successfully","timestamp":"2024-09-17T05:35:21.819Z"}

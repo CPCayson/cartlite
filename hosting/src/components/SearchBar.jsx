@@ -1,30 +1,115 @@
-import React, { useState, useEffect, useRef } from 'react';
-import PropTypes from 'prop-types';
-import { MapPin, Clock, Search } from 'lucide-react';
-import { Input, Button, Select, Box, Flex } from '@chakra-ui/react';
-import { loadGoogleMapsScript } from '../api/googleMapsApi';
+// src/components/SearchBar.jsx
 
+import { useState, useEffect, useRef, useContext, useCallback } from 'react';
+import PropTypes from 'prop-types';
+import { RefreshCw, Search } from 'lucide-react';
+import { Input, Button, Box, Flex } from '@chakra-ui/react';
+import { loadGoogleMapsScript } from '../api/googleMapsApi';
+import { useBookingCalculation } from '../hooks/useBookingCalculation';
+import { GeolocationContext } from '../context/GeolocationContext';
+import { useAuth } from '../context/AuthContext';
+
+/**
+ * SearchBar component allows users to select destination and pickup locations and book rides.
+ */
 const SearchBar = ({
-  paymentIntentId,
-  paymentIntentStatus,
-  onPaymentIntentUpdate,
-  onBookRide,
-  onCreateCheckoutSession,
   onDestinationSelect,
-  onPickupSelect
+  onPickupSelect,
+  onBookRide,
+  initialLatLng,
+  selectedItem,
+  selectedRide,
 }) => {
-  const [step, setStep] = useState(0);
+  const { user } = useAuth();
+  const { geolocation, updateGeolocation } = useContext(GeolocationContext);
   const [destination, setDestination] = useState('');
   const [pickupLocation, setPickupLocation] = useState('');
-  const [countdownTime, setCountdownTime] = useState('Now');
-  const [bookingAmount, setBookingAmount] = useState(0);
+  const [destinationCoords, setDestinationCoords] = useState(null);
+  const [pickupCoords, setPickupCoords] = useState(initialLatLng || geolocation);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [isDestinationSelected, setIsDestinationSelected] = useState(false);
   const destinationInputRef = useRef(null);
   const pickupInputRef = useRef(null);
-  const [destinationCoords, setDestinationCoords] = useState(null);
-  const [pickupCoords, setPickupCoords] = useState(null);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [isEditingPickup, setIsEditingPickup] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const isFormValid = pickupLocation && destination;
+  const { bookingAmount, updateBookingAmount } = useBookingCalculation();
 
-  // Load Google Maps API
+  // Geocoding logic for reverse geocoding
+  const reverseGeocode = useCallback(
+    (latLng) => {
+      if (!window.google || !window.google.maps) {
+        console.error('Google Maps API not loaded');
+        return;
+      }
+
+      const geocoder = new window.google.maps.Geocoder();
+      geocoder.geocode({ location: latLng }, (results, status) => {
+        if (status === 'OK') {
+          if (results[0]) {
+            setPickupLocation(results[0].formatted_address);
+            onPickupSelect(results[0].formatted_address);
+          } else {
+            console.error('No results found');
+          }
+        } else {
+          console.error('Geocoder failed due to: ' + status);
+        }
+      });
+    },
+    [onPickupSelect]
+  );
+
+  // Initialize the Google Maps autocomplete functionality
+  const initAutocomplete = useCallback(() => {
+    if (!window.google || !window.google.maps || !window.google.maps.places) {
+      console.error('Google Maps API not loaded');
+      return;
+    }
+
+    const options = {
+      bounds: new window.google.maps.LatLngBounds(
+        new window.google.maps.LatLng(30.2817, -89.4178),
+        new window.google.maps.LatLng(30.3617, -89.2978)
+      ),
+      strictBounds: true,
+      types: ['geocode'],
+    };
+
+    ['destination', 'pickup'].forEach((fieldType) => {
+      const autocomplete = new window.google.maps.places.Autocomplete(
+        fieldType === 'destination' ? destinationInputRef.current : pickupInputRef.current,
+        options
+      );
+
+      autocomplete.addListener('place_changed', () => {
+        const place = autocomplete.getPlace();
+        if (place.geometry) {
+          const coords = {
+            lat: place.geometry.location.lat(),
+            lng: place.geometry.location.lng(),
+          };
+          if (fieldType === 'destination') {
+            setDestination(place.formatted_address);
+            setDestinationCoords(coords);
+            onDestinationSelect(place.formatted_address);
+            setIsDestinationSelected(true);
+          } else {
+            setPickupLocation(place.formatted_address);
+            setPickupCoords(coords);
+            onPickupSelect(place.formatted_address);
+
+            if (isEditingPickup && isLoaded) {
+              updateGeolocation(coords);
+              setIsEditingPickup(false);
+            }
+          }
+        }
+      });
+    });
+  }, [isEditingPickup, isLoaded, onDestinationSelect, onPickupSelect, updateGeolocation]);
+
+  // Load Google Maps script
   useEffect(() => {
     loadGoogleMapsScript(import.meta.env.VITE_GOOGLE_MAPS_API_KEY)
       .then(() => {
@@ -35,108 +120,85 @@ const SearchBar = ({
       });
   }, []);
 
+  // Initialize autocomplete and reverse geocode if needed
   useEffect(() => {
     if (isLoaded) {
-      const cleanup = initAutocomplete();
-      return cleanup;
+      initAutocomplete();
+      if (pickupCoords) {
+        reverseGeocode(pickupCoords);
+      }
     }
-  }, [isLoaded]);
+  }, [isLoaded, pickupCoords, initAutocomplete, reverseGeocode]);
 
+  // Update pickup coordinates based on geolocation
+  useEffect(() => {
+    if (geolocation && isLoaded) {
+      setPickupCoords(geolocation);
+      reverseGeocode(geolocation);
+    }
+  }, [geolocation, isLoaded, reverseGeocode]);
+
+  // Update booking amount based on pickup and destination coordinates
   useEffect(() => {
     if (pickupCoords && destinationCoords) {
-      updateBookingAmount();
+      updateBookingAmount(pickupCoords, destinationCoords);
     }
-  }, [pickupCoords, destinationCoords]);
+  }, [pickupCoords, destinationCoords, updateBookingAmount]);
 
-  // Initialize Google Maps autocomplete
-  const initAutocomplete = () => {
-    if (!window.google || !window.google.maps || !window.google.maps.places) {
-      console.error('Google Maps API not loaded');
-      return () => {};
-    }
-
-    const bounds = new window.google.maps.LatLngBounds(
-      new window.google.maps.LatLng(30.2817, -89.4178),
-      new window.google.maps.LatLng(30.3617, -89.2978)
-    );
-
-    const options = {
-      bounds: bounds,
-      strictBounds: true,
-      types: ['geocode'],
-    };
-
-    const destinationAutocomplete = new window.google.maps.places.Autocomplete(destinationInputRef.current, options);
-    const pickupAutocomplete = new window.google.maps.places.Autocomplete(pickupInputRef.current, options);
-
-    const destinationListener = destinationAutocomplete.addListener('place_changed', () => {
-      const place = destinationAutocomplete.getPlace();
-      if (place.geometry) {
-        setDestination(place.formatted_address);
-        setDestinationCoords(place.geometry.location);
-        onDestinationSelect(place.formatted_address);
-        setStep(1);
-      }
-    });
-
-    const pickupListener = pickupAutocomplete.addListener('place_changed', () => {
-      const place = pickupAutocomplete.getPlace();
-      if (place.geometry) {
-        setPickupLocation(place.formatted_address);
-        setPickupCoords(place.geometry.location);
-        onPickupSelect(place.formatted_address);
-        setStep(2);
-      }
-    });
-
-    return () => {
-      if (window.google && window.google.maps && window.google.maps.event) {
-        window.google.maps.event.removeListener(destinationListener);
-        window.google.maps.event.removeListener(pickupListener);
-      }
-    };
-  };
-
-  // Geolocation for current location
-  const handleUseCurrentLocation = () => {
+  /**
+   * Handles updating the user's current location.
+   */
+  const handleUpdateLocation = () => {
+    setIsLoading(true); // Start loader
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          const locationString = `Lat: ${position.coords.latitude}, Lng: ${position.coords.longitude}`;
-          setPickupLocation(locationString);
-          setPickupCoords(new window.google.maps.LatLng(position.coords.latitude, position.coords.longitude));
-          onPickupSelect(locationString);
-          setStep(2);
+          const newLatLng = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          updateGeolocation(newLatLng);
+          setPickupCoords(newLatLng);
+          reverseGeocode(newLatLng);
+          setIsLoading(false); // Stop loader
         },
         (error) => {
           console.error('Error fetching current location:', error);
+          setIsLoading(false); // Stop loader
         }
       );
     } else {
       console.error('Geolocation is not supported by this browser.');
+      setIsLoading(false); // Stop loader
     }
   };
 
-  // Booking amount calculation
-  const updateBookingAmount = () => {
-    if (pickupCoords && destinationCoords) {
-      const distance = calculateDistance(
-        pickupCoords.lat(), pickupCoords.lng(),
-        destinationCoords.lat(), destinationCoords.lng()
-      );
-
-      const normalizedDistance = normalizeDistance(distance);
-      const price = calculatePrice(normalizedDistance);
-      setBookingAmount(price.toFixed(2));
-    } else {
-      setBookingAmount(0);
+  /**
+   * Handles the booking of a ride.
+   */
+  const handleBookNow = () => {
+    if (!destination || !pickupLocation) {
+      alert('Please select both a destination and a pickup location before proceeding.');
+      return;
     }
+
+    onBookRide({
+      destination,
+      pickupLocation,
+      bookingAmount,
+    });
   };
 
   return (
-    <Box className="search-bar-container" p={4} bg="gray.100" rounded="lg" w="full" h="auto">
+    <Box p={4} bg="gray.100" rounded="lg" w="full" h="auto">
       <Flex direction="column" gap={4} w="full">
-        {step >= 0 && (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleBookNow();
+          }}
+        >
+          {/* Destination Input */}
           <Flex align="center" w="full">
             <Input
               type="text"
@@ -146,61 +208,64 @@ const SearchBar = ({
               onChange={(e) => setDestination(e.target.value)}
               className="w-full"
             />
-            <Search size={20} />
+            <Button variant="ghost" onClick={() => destinationInputRef.current.focus()}>
+              <Search size={20} />
+            </Button>
           </Flex>
-        )}
 
-        {step >= 1 && (
-          <Flex align="center" w="full" mt={2}>
-            <Input
-              type="text"
-              ref={pickupInputRef}
-              placeholder="Pickup location..."
-              value={pickupLocation}
-              onChange={(e) => setPickupLocation(e.target.value)}
-              disabled={pickupLocation === 'Current Location'}
-              className="w-full"
-            />
-            <Button onClick={handleUseCurrentLocation}>Use Current Location</Button>
-          </Flex>
-        )}
-
-        {step >= 2 && (
-          <>
+          {/* Pickup Input (Visible after destination is selected) */}
+          {isDestinationSelected && (
             <Flex align="center" w="full" mt={2}>
-              <Select value={countdownTime} onChange={(e) => setCountdownTime(e.target.value)} className="w-full">
-                <option value="Now">Now</option>
-                <option value="10">10 minutes</option>
-                <option value="20">20 minutes</option>
-                <option value="30">30 minutes</option>
-              </Select>
-            </Flex>
-
-            <Flex align="center" w="full" mt={2}>
-              <Button colorScheme="teal" onClick={handleBookingConfirmation} w="full">
-                Book Now (${bookingAmount})
+              <Button
+                leftIcon={<RefreshCw size={16} />}
+                onClick={handleUpdateLocation}
+                mr={2}
+                isLoading={isLoading}
+              >
+                Update Location
+              </Button>
+              <Input
+                type="text"
+                ref={pickupInputRef}
+                placeholder="Pickup location..."
+                value={pickupLocation}
+                onChange={(e) => setPickupLocation(e.target.value)}
+                className="w-full"
+                isReadOnly={!isEditingPickup}
+              />
+              <Button onClick={() => setIsEditingPickup(!isEditingPickup)} ml={2}>
+                {isEditingPickup ? 'Save' : 'Edit'}
               </Button>
             </Flex>
-            <Flex align="center" w="full" mt={2}>
-              <Button colorScheme="blue" onClick={handleCreateCheckoutSession} w="full">
-                Checkout (${bookingAmount})
-              </Button>
-            </Flex>
-          </>
-        )}
+          )}
+
+          {/* Book and Checkout Button */}
+          <Button
+            type="submit"
+            colorScheme="blue"
+            mt={4}
+            w="full"
+            isLoading={isLoading}
+            isDisabled={!isFormValid || isLoading}
+          >
+            {isLoading ? 'Processing...' : 'Book and Checkout'}
+          </Button>
+        </form>
       </Flex>
     </Box>
   );
 };
 
 SearchBar.propTypes = {
-  paymentIntentId: PropTypes.string,
-  paymentIntentStatus: PropTypes.string,
-  onPaymentIntentUpdate: PropTypes.func.isRequired,
-  onBookRide: PropTypes.func.isRequired,
-  onCreateCheckoutSession: PropTypes.func.isRequired,
   onDestinationSelect: PropTypes.func.isRequired,
   onPickupSelect: PropTypes.func.isRequired,
+  onBookRide: PropTypes.func.isRequired,
+  initialLatLng: PropTypes.shape({
+    lat: PropTypes.number,
+    lng: PropTypes.number,
+  }),
+  selectedItem: PropTypes.object,
+  selectedRide: PropTypes.object,
 };
 
 export default SearchBar;

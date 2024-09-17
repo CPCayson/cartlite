@@ -1,27 +1,21 @@
-import { db } from '../firebase/firebaseConfig';
-import { doc, updateDoc } from 'firebase/firestore';
 import axios from 'axios';
-import { auth } from '../firebase/firebaseConfig'; // Ensure this is the correct path
+import { auth } from '../hooks/firebase/firebaseConfig';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-// Create an Axios instance
-const stripeApi = axios.create({
+const api = axios.create({
   baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
-// Add a request interceptor to attach the Firebase auth token
-stripeApi.interceptors.request.use(async (config) => {
+api.interceptors.request.use(async (config) => {
   try {
-    const currentUser = auth.currentUser;
-    if (currentUser) {
-      const token = await currentUser.getIdToken(true); // Force refresh the token
+    const user = auth.currentUser;
+    if (user) {
+      const token = await user.getIdToken();
       config.headers.Authorization = `Bearer ${token}`;
-    } else {
-      const token = localStorage.getItem('authToken');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
     }
     return config;
   } catch (error) {
@@ -30,163 +24,11 @@ stripeApi.interceptors.request.use(async (config) => {
   }
 });
 
-// Example API function to update Stripe status in Firestore
-export const updateStripeStatusInDb = async (userId, status) => {
+
+
+export const createPaymentIntent = async (amount, pickup, destination) => {
   try {
-    const userRef = doc(db, 'users', userId);
-    await updateDoc(userRef, { stripeAccountStatus: status });
-  } catch (error) {
-    console.error('Error updating Stripe status in Firestore:', error);
-    throw error; // Rethrow to handle it in the calling function
-  }
-};
-
-// Function to create an account link for Stripe onboarding
-export const createAccountLink = async (accountId) => {
-  if (!accountId) {
-    throw new Error('Account ID is required');
-  }
-  try {
-    const response = await stripeApi.post('/stripeApi/create-account-link', { accountId });
-    return response.data;
-  } catch (error) {
-    console.error('Error creating account link:', error);
-    throw new Error('Failed to create account link: ' + (error.response?.data?.error || error.message));
-  }
-};
-
-export const updateUserStripeAccount = async (userId, accountData) => {
-  if (!userId) {
-    throw new Error('User ID is required')
-  }
-  try {
-    const response = await stripeApi.post(`/stripeApi/update-user-stripe-account/${userId}`, accountData)
-    return response.data
-  } catch (error) {
-    console.error('Error updating user Stripe account:', error)
-    throw new Error('Failed to update user Stripe account: ' + (error.response?.data?.error || error.message))
-  }
-}
-
-
-// Function to create a new Stripe customer
-export const createCustomer = async (customerData) => {
-  try {
-    const response = await stripeApi.post('/stripeApi/create-customer', customerData);
-    return response.data;
-  } catch (error) {
-    console.error('Error creating Stripe customer:', error);
-    throw new Error('Failed to create Stripe customer: ' + (error.response?.data?.error || error.message));
-  }
-};
-
-// Function to update an existing Stripe customer
-export const updateCustomer = async (customerId, updateData) => {
-  if (!customerId) {
-    throw new Error('Customer ID is required');
-  }
-  try {
-    const response = await stripeApi.post(`/stripeApi/update-customer/${customerId}`, updateData);
-    return response.data;
-  } catch (error) {
-    console.error('Error updating Stripe customer:', error);
-    throw new Error('Failed to update Stripe customer: ' + (error.response?.data?.error || error.message));
-  }
-};
-
-// Function to retrieve a payment intent
-export const retrievePaymentIntent = async (paymentIntentId) => {
-  if (!paymentIntentId) {
-    throw new Error('Payment Intent ID is required');
-  }
-  try {
-    const response = await stripeApi.get(`/stripeApi/retrieve-payment-intent/${paymentIntentId}`);
-    return response.data;
-  } catch (error) {
-    console.error('Error retrieving payment intent:', error);
-    throw new Error('Failed to retrieve payment intent: ' + (error.response?.data?.error || error.message));
-  }
-};
-
-// Function to create a checkout session
-export const createCheckoutSession = async (sessionData) => {
-  try {
-    const response = await stripeApi.post('/stripeApi/create-checkout-session', sessionData);
-    return response.data;
-  } catch (error) {
-    console.error('Error creating checkout session:', error);
-    throw new Error('Failed to create checkout session: ' + (error.response?.data?.error || error.message));
-  }
-};
-// Function to create a Stripe connected account
-export const createStripeConnectedAccount_test = async (email) => {
-  try {
-    const response = await axios.post('/api/create-stripe-account_test', { email });
-    return {
-      stripeAccountId: response.data.stripeAccountId,
-      onboardingUrl: response.data.url, // Stripe onboarding link
-    };
-  } catch (error) {
-    console.error('Error creating Stripe connected account:', error);
-    throw new Error('Failed to create Stripe connected account');
-  }
-};
-
-
-
-// Function to create an account link for Stripe onboarding
-
-
-// Function to complete Stripe onboarding
-export const completeStripeOnboarding = async (accountId) => {
-  if (!accountId) {
-    throw new Error('Account ID is required');
-  }
-  try {
-    const response = await stripeApi.post('/stripeApi/complete-stripe-onboarding', { accountId });
-    return response.data;
-  } catch (error) {
-    console.error('Error completing Stripe onboarding:', error);
-    throw new Error('Failed to complete Stripe onboarding: ' + (error.response?.data?.error || error.message));
-  }
-};
-
-// Function to create an account session for Stripe Connect
-export const createAccountSession = async (accountId) => {
-  if (!accountId) {
-    throw new Error('Account ID is required');
-  }
-  try {
-    const response = await stripeApi.post('/stripeApi/create-account-session', { accountId });
-    return response.data;
-  } catch (error) {
-    console.error('Error creating account session:', error);
-    throw new Error('Failed to create account session: ' + (error.response?.data?.error || error.message));
-  }
-};
-
-// Function to get Stripe account status
-export const getStripeAccountStatus = async (accountId) => {
-  if (!accountId) {
-    throw new Error('Account ID is required');
-  }
-  try {
-    const response = await stripeApi.get(`/stripeApi/stripe-account-status/${accountId}`);
-    return response.data.status;
-  } catch (error) {
-    console.error('Error fetching Stripe account status:', error);
-    throw new Error('Failed to fetch Stripe account status: ' + (error.response?.data?.error || error.message));
-  }
-};
-
-// Function to create a payment intent
-export const createPaymentIntent = async (paymentDetails) => {
-  const headers = { 'Content-Type': 'application/json' };
-  if (!paymentDetails.rideId || paymentDetails.rideId.trim() === '') {
-    throw new Error('Ride ID is required and cannot be empty.');
-  }
-  try {
-    const response = await stripeApi.post('/stripeApi/create-payment-intent', paymentDetails, { headers });
+    const response = await api.post('/api/create-payment-intent', { amount, pickup, destination });
     return response.data;
   } catch (error) {
     console.error('Error creating payment intent:', error);
@@ -194,27 +36,19 @@ export const createPaymentIntent = async (paymentDetails) => {
   }
 };
 
-// Function to capture a payment intent
-export const capturePaymentIntent = async (rideId, amount) => {
-  if (!rideId || !amount) {
-    throw new Error('Missing rideId or amount in request body');
-  }
+export const capturePaymentIntent = async (bookingId) => {
   try {
-    const response = await stripeApi.post('/stripeApi/capture-payment-intent', { rideId, amount });
+    const response = await api.post('/api/capture-payment-intent', { bookingId });
     return response.data;
   } catch (error) {
-    console.error('Error capturing payment:', error);
-    throw new Error('Failed to capture payment: ' + (error.response?.data?.error || error.message));
+    console.error('Error capturing payment intent:', error);
+    throw new Error('Failed to capture payment intent: ' + (error.response?.data?.error || error.message));
   }
 };
 
-// Function to cancel a payment intent
-export const cancelPaymentIntent = async (paymentIntentId) => {
-  if (!paymentIntentId) {
-    throw new Error('Payment Intent ID is required');
-  }
+export const cancelPaymentIntent = async (bookingId) => {
   try {
-    const response = await stripeApi.post('/stripeApi/cancel-payment-intent', { paymentIntentId });
+    const response = await api.post('/api/cancel-booking', { bookingId });
     return response.data;
   } catch (error) {
     console.error('Error canceling payment intent:', error);
@@ -222,55 +56,19 @@ export const cancelPaymentIntent = async (paymentIntentId) => {
   }
 };
 
-// Function to refund a payment intent
-export const refundPaymentIntent = async (paymentIntentId) => {
-  if (!paymentIntentId) {
-    throw new Error('Payment Intent ID is required');
-  }
+export const refundPaymentIntent = async (bookingId) => {
   try {
-    const response = await stripeApi.post('/stripeApi/refund-payment-intent', { paymentIntentId });
+    const response = await api.post('/api/refund-booking', { bookingId });
     return response.data;
   } catch (error) {
     console.error('Error refunding payment intent:', error);
-    throw new Error('Failed to refund payment: ' + (error.response?.data?.error || error.message));
+    throw new Error('Failed to refund payment intent: ' + (error.response?.data?.error || error.message));
   }
 };
-
-// Function to handle request actions
-export const handleRequestAction = async (request, action) => {
-  try {
-    if (!request.rideId || !request.rideFee) {
-      throw new Error('Missing rideId or rideFee in the request data');
-    }
-
-    if (action === 'accept') {
-      await capturePaymentIntent(request.rideId, Math.round(request.rideFee * 100));
-    } else if (action === 'reject') {
-      if (!request.paymentIntentId) {
-        throw new Error('Payment Intent ID is required');
-      }
-      await cancelPaymentIntent(request.paymentIntentId);
-    }
-  } catch (error) {
-    console.error(`Error ${action === 'accept' ? 'accepting' : 'rejecting'} ride request:`, error);
-    throw error;
-  }
-};
-export const handleCreateStripeOnboarding = async (email) => {
-  try {
-    const response = await axios.post('/api/create-stripe-account-link', { email });
-    window.location.href = response.data.url; // Redirect to Stripe onboarding
-  } catch (error) {
-    console.error('Error creating Stripe onboarding link:', error);
-    throw new Error('Error creating Stripe onboarding link: ' + error.message);
-  }
-};
-
-
 
 export const handleCreateCheckoutSession = async (amount, customerEmail) => {
   try {
-    const response = await axios.post('/api/create-checkout-session', {
+    const response = await api.post('/api/create-checkout-session', {
       amount: parseInt(amount) * 100, // Convert to cents
       customerEmail,
     });
@@ -281,28 +79,166 @@ export const handleCreateCheckoutSession = async (amount, customerEmail) => {
   }
 };
 
-export const handleCapturePaymentIntent = async (paymentIntentId, customerEmail) => {
+// stripeApi.jsx
+export const retrievePaymentIntent = async (clientSecret) => {
   try {
-    const response = await axios.post('/api/capture-payment-intent', {
-      paymentIntentId,
-      customerEmail,
+    const response = await fetch(`/api/stripe/retrieve-payment-intent/${clientSecret}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
     });
-    return response.data; // Return the captured payment intent data
+
+    if (!response.ok) {
+      throw new Error('Error retrieving Payment Intent');
+    }
+
+    const data = await response.json();
+    return data;
   } catch (error) {
-    console.error('Error capturing payment intent:', error);
-    throw new Error('Error capturing payment intent: ' + error.message);
+    console.error('Error retrieving Payment Intent:', error);
+    throw error;
   }
 };
 
-export const handleCancelPaymentIntent = async (paymentIntentId) => {
+
+
+export const handleCapturePaymentIntent = async (bookingId) => {
   try {
-    const response = await axios.post('/api/cancel-payment-intent', { paymentIntentId });
-    return response.data; // Return the canceled payment intent data
+    const response = await capturePaymentIntent(bookingId);
+    return response;
   } catch (error) {
-    console.error('Error canceling payment intent:', error);
-    throw new Error('Error canceling payment intent: ' + error.message);
+    console.error('Error handling capture payment intent:', error);
+    throw new Error('Error handling capture payment intent: ' + error.message);
   }
 };
 
-// Default export of the Axios instance for custom use cases
-export default stripeApi;
+export const handleCancelPaymentIntent = async (bookingId) => {
+  try {
+    const response = await cancelPaymentIntent(bookingId);
+    return response;
+  } catch (error) {
+    console.error('Error handling cancel payment intent:', error);
+    throw new Error('Error handling cancel payment intent: ' + error.message);
+  }
+};
+
+
+
+// Function to create a Stripe connected account
+export const createStripeConnectedAccount = async (email) => {
+  console.log('Attempting to create Stripe connected account for:', email);
+  try {
+    const response = await api.post('/api/create-stripe-account', { email });
+    console.log('Stripe connected account successfully created:', response.data);
+    // Ensure that the backend returns both accountId and customerId
+    const { accountId, customerId } = response.data;
+    return { accountId, customerId };
+  } catch (error) {
+    console.error('Error creating Stripe connected account:', error);
+    throw new Error('Failed to create Stripe connected account: ' + (error.response?.data?.error || error.message));
+  }
+};
+
+// Renamed from createStripeAccountSession to createAccountLink
+// export const createAccountLink = async (accountId) => {
+//   console.log('Attempting to create Stripe onboarding session for account:', accountId);
+//   try {
+//     const response = await api.post('/api/create-account-session', { accountId });
+//     console.log('Onboarding session created successfully:', response.data);
+//     return response.data; // Assuming this returns { url }
+//   } catch (error) {
+//     console.error('Error creating Stripe account session:', error);
+//     throw new Error('Failed to create Stripe account session: ' + (error.response?.data?.error || error.message));
+//   }
+// };
+
+// New function to get Stripe account status
+export const getStripeAccountStatus = async (accountId) => {
+  console.log('Checking Stripe account status for account:', accountId);
+  try {
+    const response = await api.get(`/api/check-account-status/${accountId}`);
+    console.log('Stripe account status:', response.data.status);
+    return response.data.status;
+  } catch (error) {
+    console.error('Error checking Stripe account status:', error);
+    throw new Error('Failed to check Stripe account status: ' + (error.response?.data?.error || error.message));
+  }
+};
+export const createAccountLink = async (accountId) => {
+  const response = await fetch('/create-account-link', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      accountId,
+      returnUrl: 'https://your-app.com/stripe-onboarding-complete', // Replace with your actual return URL
+    }),
+  });
+  const data = await response.json();
+  return data;
+};
+
+// New function to create a Stripe customer
+export const createStripeCustomer = async (email) => {
+  console.log('Attempting to create Stripe customer for:', email);
+  try {
+    const response = await api.post('/api/create-stripe-customer', { email });
+    console.log('Stripe customer successfully created:', response.data);
+    return response.data; // Assuming this returns { customerId }
+  } catch (error) {
+    console.error('Error creating Stripe customer:', error);
+    throw new Error('Failed to create Stripe customer: ' + (error.response?.data?.error || error.message));
+  }
+};
+
+// This function is not needed in the AuthProvider, but you might use it elsewhere in your app
+export const initializeStripeAccountAndSession = async (email) => {
+  try {
+    console.log('Starting the Stripe account creation process for email:', email);
+    const { accountId, customerId } = await createStripeConnectedAccount(email);
+    console.log('Creating onboarding session for the new account ID:', accountId);
+    const { url } = await createAccountLink(accountId);
+    console.log('Stripe onboarding session URL created:', url);
+    return { accountId, customerId, url };
+  } catch (error) {
+    console.error('Error during Stripe account initialization process:', error);
+    throw error;
+  }
+};
+
+
+export const checkStripeStatus = async (email) => {
+  try {
+    const response = await api.post('/checkStripeStatus', { email });
+    return response.data;
+  } catch (error) {
+    console.error('Error checking Stripe status:', error);
+    throw new Error('Failed to check Stripe status: ' + (error.response?.data?.error || error.message));
+  }
+};
+
+
+
+
+
+
+// stripeApi.jsx
+
+// stripeApi.jsx
+export const updateStripeStatusInDb = async (userId, status) => {
+  const response = await fetch(`/api/update-stripe-status/${userId}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ status }),
+  });
+
+  const data = await response.json();
+  return data;
+};
+
+// stripeApi.jsx
+
+
+export default api;

@@ -18,6 +18,24 @@ export const categories = [
     accommodation: '/assets/accommodation.png',
   };
   
+  export const markerSizes = {
+    default: new google.maps.Size(30, 30),
+    user: new google.maps.Size(40, 40),
+  };
+  
+  export const specialMarkers = {
+    user: '/assets/user-location.png',
+    cart: '/assets/golf-cart.png',
+    default: '/assets/default-marker.png',
+  };
+
+  const categoryIcons = {
+    food: '/assets/food.png',
+    shopping: '/assets/shopping.png',
+    fun: '/assets/fun.png',
+    // ...other categories
+  };
+  
   export const categoryColors = {
     all: '#FFFFFF',
     bar: '#FF0000',
@@ -36,16 +54,6 @@ export const categories = [
     heading: 0,
   };
   
-  export const markerSizes = {
-    default: new google.maps.Size(30, 30),
-    user: new google.maps.Size(40, 40),
-  };
-  
-  export const specialMarkers = {
-    user: '/assets/user-location.png',
-    cart: '/assets/golf-cart.png',
-    default: '/assets/default-marker.png',
-  };
   
   export const drawerSize = 'md';
   
@@ -79,9 +87,9 @@ export const categories = [
   // utils.js
   
   const categoryIcons = {
-    food: '/assets/icons/food.png',
-    shopping: '/assets/icons/shopping.png',
-    fun: '/assets/icons/fun.png',
+    food: '/assets/food.png',
+    shopping: '/assets/shopping.png',
+    fun: '/assets/fun.png',
     // ...other categories
   };
   // Normalize the distance between minDist and maxDist to a value between 1 and 5
@@ -136,45 +144,6 @@ export const categories = [
           console.error('Geocode error:', status);
           reject(new Error('Geocode was not successful for the following reason: ' + status));
         }
-      });
-    });
-  };
-  
-  // Function to fetch places using Google Places API
-  export const fetchPlaces = (map, category, setPlaces, callback = () => {}) => {
-    if (!map) return;
-    const service = new window.google.maps.places.PlacesService(map);
-    const request = {
-      location: map.getCenter(),
-      radius: '2800',
-      type: category === 'all' ? [] : [category],
-    };
-  
-    service.nearbySearch(request, (results, status) => {
-      if (status === window.google.maps.places.PlacesServiceStatus.OK) {
-        setPlaces(results);
-        if (typeof callback === 'function') {
-          callback(results);
-        }
-      }
-    });
-  };
-  
-  // Function to create markers on the map
-  export const createMarkers = (map, places, category, categories) => {
-    places.forEach((place) => {
-      const marker = new window.google.maps.Marker({
-        position: place.geometry.location,
-        map: map,
-        title: place.name,
-        icon: {
-          url: categoryIcons[category] || '/assets/shop.png',
-          scaledSize: new window.google.maps.Size(60, 60),
-        },
-      });
-  
-      marker.addListener('click', () => {
-        // Handle marker click event
       });
     });
   };

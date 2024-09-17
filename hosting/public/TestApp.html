@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Golf Cart Ride Request Test</title>
+  <!-- Include Firebase SDKs -->
+  <script type="module">
+    // Import Firebase modules
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js';
+    import { getFirestore, collection, doc, setDoc, onSnapshot, updateDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js';
+
+    // Initialize Firebase
+    const firebaseConfig = {
+  apiKey: "AIzaSyCOkJd62Hu9iEVlJ_LIIrakwbkm19cg8CU",
+  authDomain: "rabbit-2ba47.firebaseapp.com",
+  databaseURL: "https://rabbit-2ba47-default-rtdb.firebaseio.com",
+  projectId: "rabbit-2ba47",
+  storageBucket: "rabbit-2ba47.appspot.com",
+  messagingSenderId: "415352862345",
+  appId: "1:415352862345:web:6064bb65137c0d745cf858",
+  measurementId: "G-1BWB1E4BEP"
+};
+
+    const firebaseApp = initializeApp(firebaseConfig);
+    const db = getFirestore(firebaseApp);
+
+    // Initialize Stripe
+    const stripe = Stripe('pk_test_51PKXFdLZTLOaKlNslmwEPt9pWm5uS9ZyOsr5gXeJKCmLal5nT1gofFJm2icRtOJgxEhs5265M6LRpSGPHEHydRna00CVialgWd');
+
+    // Simulated User ID (In production, use Firebase Auth)
+    const currentUserId = 'test-user-id';
+
+    // Handle the Checkout Button Click
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('checkout-button').addEventListener('click', () => {
+        fetch('/create-checkout-session', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ userId: currentUserId })
+        })
+          .then(response => response.json())
+          .then(session => stripe.redirectToCheckout({ sessionId: session.id }))
+          .catch(error => console.error('Error:', error));
+      });
+
+      // On Page Load, Check for session_id in URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const sessionId = urlParams.get('session_id');
+
+      if (sessionId) {
+        // Retrieve the session from the server to verify payment
+        fetch(`/retrieve-session?session_id=${sessionId}`)
+          .then(response => response.json())
+          .then(session => {
+            if (session.payment_status === 'paid') {
+              // Create a ride request in Firebase
+              createRideRequest(sessionId, currentUserId);
+            } else {
+              console.error('Payment not successful');
+            }
+          })
+          .catch(error => console.error('Error:', error));
+      }
+    });
+// Function to simulate host accepting the ride
+
+    // Function to Create a Ride Request in Firebase
+    async function createRideRequest(sessionId, userId) {
+      try {
+        await setDoc(doc(db, 'rideRequests', sessionId), {
+          userId: userId,
+          status: 'pending',
+          timestamp: serverTimestamp(),
+        });
+        // Start listening for host acceptance
+        waitForAcceptance(sessionId);
+        // Display the waiting message
+        document.getElementById('waitingMessage').style.display = 'block';
+      } catch (error) {
+        console.error('Error adding document: ', error);
+      }
+    }
+
+    // Function to Wait for Host Acceptance
+    function waitForAcceptance(sessionId) {
+      const rideRequestRef = doc(db, 'rideRequests', sessionId);
+
+      onSnapshot(rideRequestRef, (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data.status === 'accepted') {
+            // Hide the waiting message
+            document.getElementById('waitingMessage').style.display = 'none';
+            // Show the session view with host info
+            showSessionView(data);
+          }
+        } else {
+          console.log("No such document!");
+        }
+      });
+
+      // Simulate host acceptance after 10 seconds
+      setTimeout(() => {
+        acceptRide(sessionId);
+      }, 10000); // 10 seconds
+    }
+
+    // Function to Simulate Host Acceptance
+    async function acceptRide(paymentIntentId) {
+  try {
+    // Update ride request document
+    await updateDoc(doc(db, 'rideRequests', paymentIntentId), {
+      is_driver_assigned: true,
+      host_id: 'host-user-id',
+      host_location: new GeoPoint(latitude, longitude), // Replace with actual coordinates
+      status: 'accepted',
+    });
+
+    // Optionally, update host's active ride
+    await setDoc(doc(db, 'hosts', 'host-user-id'), {
+      activeRideRequestId: paymentIntentId,
+    }, { merge: true });
+
+    // Capture the payment
+    const response = await fetch(`${serverUrl}/capture-payment-intent`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ paymentIntentId }),
+    });
+    const data = await response.json();
+    console.log('Payment captured:', data);
+  } catch (error) {
+    console.error('Error accepting ride:', error);
+  }
+}
+
+
+    // Function to Update the UI with Host Info
+    function showSessionView(data) {
+      document.getElementById('sessionView').style.display = 'block';
+      document.getElementById('hostInfo').innerText = `Your driver is ${data.hostName}`;
+    }
+  </script>
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Golf Cart Ride Request Test</title>
+  <!-- Include Stripe.js -->
+  <script src="https://js.stripe.com/v3/"></script>
+
+  <!-- Include your custom JavaScript file -->
+  <script type="module" src="testapp.js"></script>
+
+  <style>
+    #waitingMessage, #sessionView {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>Golf Cart Ride Request Test</h1>
+
+  <!-- Ride Details Form -->
+  <div id="rideDetails">
+    <label for="rideFee">Ride Fee ($):</label>
+    <input type="number" id="rideFee" name="rideFee" step="0.01" value="5.00"><br><br>
+
+    <label for="destinationLocation">Destination Location:</label>
+    <input type="text" id="destinationLocation" name="destinationLocation"><br><br>
+
+    <label for="pickupLocation">Pickup Location:</label>
+    <input type="text" id="pickupLocation" name="pickupLocation"><br><br>
+
+    <label for="userEmail">Email:</label>
+    <input type="email" id="userEmail" name="userEmail"><br><br>
+
+    <!-- Stripe Card Element -->
+    <div id="card-element"></div><br>
+
+    <button id="checkout-button">Buy a Ride</button>
+  </div>
+
+  <div id="waitingMessage">
+    <p>Waiting for a host to accept your ride request...</p>
+  </div>
+
+  <div id="sessionView">
+    <h2>Ride Accepted!</h2>
+    <p id="hostInfo"></p>
+
+    <!-- Messaging Interface -->
+    <div id="messageBox"></div>
+    <input type="text" id="messageInput" placeholder="Type your message...">
+    <button id="sendMessageButton">Send Message</button><br><br>
+
+    <!-- Cancel Button -->
+    <button id="cancelButton">Cancel Ride</button>
+  </div>
+</body>
+</html>

@@ -1,166 +1,99 @@
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { Menu, Users, Sun, Moon } from 'lucide-react';
-import OnboardingModal from './OnboardingModal';
-import { auth } from '../firebase/firebaseConfig';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import WelcomeBanner from './header/WelcomeBanner';
+import DesktopNavigation from './header/DesktopNavigation';
+import MobileNavigation from './header/MobileNavigation';
+import Logo from './header/Logo';
+import { db } from '../hooks/firebase/firebaseConfig';
+import { doc, getDoc } from 'firebase/firestore';
 
 const Header = ({ darkMode, setDarkMode, appMode, setAppMode, setIsLeftPanelOpen, setIsRightPanelOpen }) => {
-  const [showOnboardingModal, setShowOnboardingModal] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userName, setUserName] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { user, logout } = useAuth();
+  const [paymentSuccess, setPaymentSuccess] = useState(false); // Track payment success
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Listen for authentication state changes
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const checkPaymentStatus = async () => {
       if (user) {
-        setIsAuthenticated(true);
-        setUserName(user.displayName || user.email);
-      } else {
-        setIsAuthenticated(false);
-        setUserName('');
-      }
-    });
+        try {
+          const paymentDocRef = doc(db, 'payments', user.uid);
+          const paymentDoc = await getDoc(paymentDocRef);
 
-    // Cleanup the listener on unmount
-    return () => unsubscribe();
-  }, []);
+          if (paymentDoc.exists()) {
+            setPaymentSuccess(true); // If payment exists in Firebase, mark as successful
+          } else {
+            setPaymentSuccess(false); // No payment found, revert to default header
+          }
+        } catch (error) {
+          console.error("Error checking payment status:", error);
+        }
+      }
+    };
+
+    checkPaymentStatus();
+  }, [user]);
 
   const handleModeSwitch = () => {
     if (appMode === 'rabbit') {
-      setAppMode('host'); 
-      setIsRightPanelOpen(true);
-      setIsLeftPanelOpen(false); 
+      setAppMode('host');
+      setIsRightPanelOpen(false);
+      setIsLeftPanelOpen(true);
     } else {
-      setAppMode('rabbit'); 
-      setIsLeftPanelOpen(true); 
-      setIsRightPanelOpen(false); 
+      setAppMode('rabbit');
+      setIsLeftPanelOpen(true);
+      setIsRightPanelOpen(false);
     }
   };
 
   const handleLogin = () => {
-    navigate('/signup'); // Redirect to SignupForm route
+    navigate('/signup');
   };
 
-  const handleLogout = () => {
-    signOut(auth)
-      .then(() => {
-        console.log('User signed out successfully.');
-        setIsAuthenticated(false);
-      })
-      .catch((error) => {
-        console.error('Error signing out:', error);
-      });
+  const handleLogout = async () => {
+    await logout();
+    navigate('/');
   };
 
   return (
-    <>
-      {/* Onboarding Modal */}
-      {showOnboardingModal && (
-        <OnboardingModal 
-          isOpen={showOnboardingModal} 
-          onClose={() => setShowOnboardingModal(false)}
-        />
-      )}
+    <header
+      className={`text-white py-4 px-6 flex flex-col items-center 
+        ${paymentSuccess 
+          ? 'bg-gradient-to-r from-purple-500 via-purple-600 to-purple-700' 
+          : (user 
+              ? 'bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600' 
+              : 'bg-gradient-to-r from-teal-400 via-teal-500 to-teal-600'
+            )}`}>
+      
+      <WelcomeBanner user={user} />
 
-      <header className={`text-white py-4 px-6 flex flex-col items-center 
-        ${isAuthenticated ? 'bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600' : 'bg-gradient-to-r from-teal-400 via-teal-500 to-teal-600'}`}>
+      <div className="flex justify-between items-center w-full">
+        <Logo setIsMobileMenuOpen={setIsMobileMenuOpen} isMobileMenuOpen={isMobileMenuOpen} />
         
-        {/* Welcome Banner */}
-        {isAuthenticated && (
-          <div className="w-full text-center py-2 bg-yellow-300 text-gray-800 rounded mb-2">
-            Welcome, {userName}!
-          </div>
-        )}
+        <DesktopNavigation 
+          user={user}
+          appMode={appMode}
+          darkMode={darkMode}
+          handleModeSwitch={handleModeSwitch}
+          setDarkMode={setDarkMode}
+          handleLogin={handleLogin}
+          handleLogout={handleLogout}
+        />
+      </div>
 
-        <div className="flex justify-between items-center w-full">
-          {/* Logo and Menu Button */}
-          <div className="flex items-center">
-            {/* Hamburger Menu for Mobile */}
-            <button 
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
-              className="mr-4 lg:hidden"
-            >
-              <Menu size={24} />
-            </button>
-            <h1 className="text-2xl font-bold">cartRABBIT</h1>
-          </div>
-
-          {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center">
-            <button 
-              onClick={handleModeSwitch} 
-              className={`px-3 py-2 text-sm mr-4 flex items-center ${appMode === 'rabbit' ? 'bg-blue-700' : 'bg-blue-600'} rounded`}
-            >
-              <Users className="mr-1" />
-              {appMode === 'rabbit' ? 'Switch to host' : 'Switch to rabbit'}
-            </button>
-            <button 
-              onClick={() => setDarkMode(!darkMode)} 
-              className="p-3 bg-blue-700 dark:bg-blue-600 rounded mr-4"
-            >
-              {darkMode ? <Sun size={24} /> : <Moon size={24} />}
-            </button>
-
-            {/* Login/Logout Button */}
-            {!isAuthenticated ? (
-              <button 
-                onClick={handleLogin} 
-                className="p-3 bg-green-600 rounded mr-4"
-              >
-                Login
-              </button>
-            ) : (
-              <button 
-                onClick={handleLogout} 
-                className="p-3 bg-red-600 rounded mr-4"
-              >
-                Logout
-              </button>
-            )}
-          </nav>
-        </div>
-
-        {/* Mobile Menu */}
-        {isMobileMenuOpen && (
-          <nav className="flex flex-col items-center w-full mt-4 lg:hidden">
-            <button 
-              onClick={handleModeSwitch} 
-              className={`px-3 py-2 text-sm mb-2 flex items-center w-full justify-center ${appMode === 'rabbit' ? 'bg-blue-700' : 'bg-blue-600'} rounded`}
-            >
-              <Users className="mr-1" />
-              {appMode === 'rabbit' ? 'Switch to host' : 'Switch to rabbit'}
-            </button>
-            <button 
-              onClick={() => setDarkMode(!darkMode)} 
-              className="p-3 bg-blue-700 dark:bg-blue-600 rounded mb-2 w-full"
-            >
-              {darkMode ? <Sun size={24} /> : <Moon size={24} />}
-            </button>
-
-            {/* Mobile Login/Logout Button */}
-            {!isAuthenticated ? (
-              <button 
-                onClick={handleLogin} 
-                className="p-3 bg-green-600 rounded mb-2 w-full"
-              >
-                Login
-              </button>
-            ) : (
-              <button 
-                onClick={handleLogout} 
-                className="p-3 bg-red-600 rounded mb-2 w-full"
-              >
-                Logout
-              </button>
-            )}
-          </nav>
-        )}
-      </header>
-    </>
+      <MobileNavigation 
+        user={user}
+        appMode={appMode}
+        darkMode={darkMode}
+        isMobileMenuOpen={isMobileMenuOpen}
+        handleModeSwitch={handleModeSwitch}
+        setDarkMode={setDarkMode}
+        handleLogin={handleLogin}
+        handleLogout={handleLogout}
+      />
+    </header>
   );
 };
 

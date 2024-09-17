@@ -11,5 +11,5 @@
       "@styles/*": ["styles/*"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "public/testapp.js", "../useUserData.js"]
 }

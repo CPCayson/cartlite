@@ -1,0 +1,79 @@
+.ride-request-list {
+    /* Add any global styles for the list container here */
+  }
+  
+  .request-card {
+    background: linear-gradient(to right, #8a2387, #e94057, #f27121);
+    padding: 1px;
+    border-radius: 0.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+  }
+  
+  .request-card:hover {
+    transform: scale(1.05);
+  }
+  
+  .request-card-inner {
+    background-color: white;
+    padding: 1rem;
+    border-radius: 0.5rem;
+  }
+  
+  .dark .request-card-inner {
+    background-color: #2d3748;
+  }
+  
+  .neon-button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    font-weight: bold;
+    font-size: 1.125rem;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 5px #4CAF50, 0 0 25px #4CAF50;
+  }
+  
+  .neon-button:hover {
+    background-color: #45a049;
+    box-shadow: 0 0 5px #4CAF50, 0 0 25px #4CAF50, 0 0 50px #4CAF50, 0 0 100px #4CAF50;
+  }
+  
+  .loader {
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #3498db;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+    margin: 20px auto;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  @keyframes neon-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  
+  /* Dark mode styles */
+  @media (prefers-color-scheme: dark) {
+    .text-gray-800 {
+      color: white;
+    }
+  
+    .text-gray-600 {
+      color: #a0aec0;
+    }
+  
+    .bg-white {
+      background-color: #2d3748;
+    }
+  }

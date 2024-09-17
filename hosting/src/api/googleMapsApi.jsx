@@ -1,29 +1,25 @@
-// src/api/googleMapsApi.js
-let isScriptLoaded = false;
-let loadScriptPromise = null;
+// Ensure this is called only once in your app
+let googleMapsScriptLoaded = false;
 
 export const loadGoogleMapsScript = (apiKey) => {
-  if (isScriptLoaded) {
-    return loadScriptPromise;
-  }
-  
-  loadScriptPromise = new Promise((resolve, reject) => {
+  return new Promise((resolve, reject) => {
+    if (googleMapsScriptLoaded) {
+      resolve();
+      return;
+    }
+
     const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&v=weekly&callback=initMap`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&v=weekly`;
     script.async = true;
     script.defer = true;
     
-    window.initMap = () => {
-      isScriptLoaded = true;
+    script.onload = () => {
+      googleMapsScriptLoaded = true;
       resolve();
     };
-    
-    script.onerror = () => {
-      reject(new Error('Failed to load the Google Maps script'));
-    };
-    
+
+    script.onerror = (error) => reject(error);
+
     document.head.appendChild(script);
   });
-  
-  return loadScriptPromise;
 };
