@@ -81,3 +81,9 @@ export const StripeProvider = ({ children }) => {
   );
 };
 
+import PropTypes from 'prop-types';
+
+StripeProvider.propTypes = {
+  children: PropTypes.node.isRequired,
+};
+

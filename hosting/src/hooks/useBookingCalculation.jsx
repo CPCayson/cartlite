@@ -48,5 +48,7 @@ export const useBookingCalculation = () => {
   
 
   return { bookingAmount, updateBookingAmount };
+
+  
 };
 

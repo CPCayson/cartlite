@@ -1,21 +1,19 @@
 // useStripeIntegration.js
+
 import { useCallback } from 'react';
 import { doc, updateDoc } from 'firebase/firestore';
-import { db } from '../firebase/firebaseConfig'; // Adjust the import path as needed
-import { STRIPE_STATUS } from './constants'; // Adjust the import path as needed
+import { db } from '../firebase/firebaseConfig'; // Adjust import path
+import { STRIPE_STATUS } from './constants'; // Adjust import path
 import {
   createStripeConnectedAccount,
   getStripeAccountStatus,
   createAccountLink,
   createStripeCustomer,
-} from '../../api/stripeApi'; // Adjust the import path as needed
+} from '@api/stripeApi'; // Adjust import path
 
 export const useStripeIntegration = () => {
   /**
    * Initializes Stripe customer and Express Connect account for a user.
-   * @param {string} userId - The UID of the user in Firebase Auth.
-   * @param {string} email - The email of the user.
-   * @returns {Object} - Stripe-related data.
    */
   const initializeUserStripeAccount = useCallback(async (userId, email) => {
     try {
@@ -53,8 +51,6 @@ export const useStripeIntegration = () => {
 
   /**
    * Retrieves the Stripe account link for onboarding.
-   * @param {string} stripeConnectedAccountId - The Stripe connected account ID.
-   * @returns {string|null} - The URL for Stripe onboarding or null if not found.
    */
   const getStripeAccountLink = useCallback(async (stripeConnectedAccountId) => {
     if (!stripeConnectedAccountId) {
@@ -74,8 +70,6 @@ export const useStripeIntegration = () => {
 
   /**
    * Checks the current status of a Stripe account.
-   * @param {string} stripeAccountId - The Stripe connected account ID.
-   * @returns {string} - The status of the Stripe account.
    */
   const checkStripeAccountStatus = useCallback(async (stripeAccountId) => {
     if (!stripeAccountId) {

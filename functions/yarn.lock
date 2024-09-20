@@ -1468,10 +1468,10 @@ firebase-functions-test@^3.1.0:
     lodash "^4.17.5"
     ts-deepmerge "^2.0.1"
 
-firebase-functions@^5.0.0:
-  version "5.1.1"
-  resolved "https://registry.yarnpkg.com/firebase-functions/-/firebase-functions-5.1.1.tgz#15c668d072d4000d6a348aabb7ab4acdbd2442f8"
-  integrity sha512-KkyKZE98Leg/C73oRyuUYox04PQeeBThdygMfeX+7t1cmKWYKa/ZieYa89U8GHgED+0mF7m7wfNZOfbURYxIKg==
+firebase-functions@^6.0.1:
+  version "6.0.1"
+  resolved "https://registry.yarnpkg.com/firebase-functions/-/firebase-functions-6.0.1.tgz#8d7a63b6adc6f99e83806a0a7a88f614bdde92b6"
+  integrity sha512-0rIpTU6dnLRvP3IK+okn1FDjoqjzShm0/S+i4OMY7JFu/HJoyJ1JNkrT4KjECy1/mCHK49KsmH8iYE0rzrglHg==
   dependencies:
     "@types/cors" "^2.8.5"
     "@types/express" "4.17.3"
@@ -2467,6 +2467,11 @@ node-gyp@^10.0.0, node-gyp@^10.2.0:
     semver "^7.3.5"
     tar "^6.2.1"
     which "^4.0.0"
+
+nodemailer@^6.9.15:
+  version "6.9.15"
+  resolved "https://registry.yarnpkg.com/nodemailer/-/nodemailer-6.9.15.tgz#57b79dc522be27e0e47ac16cc860aa0673e62e04"
+  integrity sha512-AHf04ySLC6CIfuRtRiEYtGEXgRfa6INgWGluDhnxTZhHSKvrBu7lc1VVchQ0d8nPc4cFaZoPq8vkyNoZr0TpGQ==
 
 nopt@^7.0.0, nopt@^7.2.1:
   version "7.2.1"

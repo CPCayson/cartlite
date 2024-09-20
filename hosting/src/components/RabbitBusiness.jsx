@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
-import DeliverySection from '../layouts/DeliverySection';
+import DeliverySection from '../DeliverySection';
 const CarrotRating = ({ rating, size = 'medium' }) => {
   const fullCarrots = Math.floor(rating);
   const hasHalfCarrot = rating % 1 >= 0.5;

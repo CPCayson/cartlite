@@ -1,199 +1,359 @@
-import { useState, useEffect } from 'react';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'; // Firebase Storage
+// src/hooks/cart/useCartProfileForm.js
+
+import { useReducer, useEffect, useCallback } from 'react';
+import {
+  doc,
+  getDoc,
+  setDoc,
+  collection,
+  getDocs,
+  addDoc,
+  serverTimestamp,
+} from 'firebase/firestore';
+import {
+  ref,
+  uploadBytesResumable,
+  getDownloadURL,
+} from 'firebase/storage';
 import { useToast } from '@chakra-ui/react';
-import { useAuth } from '../../context/AuthContext'; // Context for user authentication
-import { useFirebase } from '../../context/FirebaseContext'; // Context for Firebase services
+import { useAuth } from '@context/AuthContext';
+import { db as useFirestore, storage as useStorage } from '../firebase/firebaseConfig'; // Ensure reactfire hooks are used
 
-export const useCartProfileForm = () => {
-  const { user } = useAuth(); // Get the authenticated user
-  const { db, storage } = useFirebase(); // Firestore DB and Firebase Storage reference
-  const toast = useToast(); // Toast notifications
 
-  const [cartData, setCartData] = useState({
+// Initial state for the reducer
+const initialState = {
+  cartData: {
     cartName: '',
-    capacity: 3,
+    cancellationFee: '',
+    operatingHours: '',
+    capacity: 1,
     description: '',
     features: {
-      airConditioner: false,
-      electric: true,
-      radio: false,
-      storage: true,
+      wifi: false,
+      chargingPorts: false,
+      climateControl: false,
+    },
+    vehicleDetails: {
+      model: '',
+      year: '',
+      registrationDetails: '',
     },
     images: [
       'https://via.placeholder.com/150',
       'https://via.placeholder.com/150',
       'https://via.placeholder.com/150',
     ],
-  });
-  const [loading, setLoading] = useState(false);
-  const [cartExists, setCartExists] = useState(false); // To track if the cart already exists
-  const [uploading, setUploading] = useState(false); // For image uploads
+    averageRating: 0,
+    reviews: [],
+    estimatedPickupTime: '',
+  },
+  loading: {
+    initialLoad: false,
+    saving: false,
+    uploading: false,
+  },
+  errors: {},
+  uploadProgress: {},
+};
 
-  // Fetch existing cart details from Firestore and prefill the form
-  useEffect(() => {
-    if (user) {
-      const fetchCartDetails = async () => {
-        setLoading(true);
-        try {
-          const cartDocRef = doc(db, 'carts', user.uid); // Reference to the user's cart document
-          const cartDocSnap = await getDoc(cartDocRef);
+// Action types
+const actionTypes = {
+  SET_LOADING: 'SET_LOADING',
+  SET_CART_DATA: 'SET_CART_DATA',
+  SET_ERROR: 'SET_ERROR',
+  CLEAR_ERROR: 'CLEAR_ERROR',
+  SET_UPLOAD_PROGRESS: 'SET_UPLOAD_PROGRESS',
+  RESET_UPLOAD_PROGRESS: 'RESET_UPLOAD_PROGRESS',
+};
 
-          if (cartDocSnap.exists()) {
-            const cartDetails = cartDocSnap.data();
-            setCartData((prevData) => ({
-              ...prevData,
-              ...cartDetails, // Prefill with saved data
-              features: { ...prevData.features, ...cartDetails.features }, // Merge features
-              images: cartDetails.images && cartDetails.images.length > 0
-                ? cartDetails.images
-                : [
-                  'https://via.placeholder.com/150',
-                  'https://via.placeholder.com/150',
-                  'https://via.placeholder.com/150',
-                ], // Default images if none are found
-            }));
-            setCartExists(true); // Mark that the cart already exists
-          } else {
-            console.log("No cart details found.");
-            setCartExists(false); // No existing cart
-          }
-        } catch (error) {
-          console.error('Error fetching cart details:', error);
-          toast({
-            title: 'Error',
-            description: 'Could not load cart details.',
-            status: 'error',
-            duration: 3000,
-            isClosable: true,
-          });
-        } finally {
-          setLoading(false);
-        }
+// Reducer function
+const reducer = (state, action) => {
+  switch (action.type) {
+    case actionTypes.SET_LOADING:
+      return {
+        ...state,
+        loading: { ...state.loading, ...action.payload },
       };
+    case actionTypes.SET_CART_DATA:
+      return {
+        ...state,
+        cartData: { ...state.cartData, ...action.payload },
+      };
+    case actionTypes.SET_ERROR:
+      return {
+        ...state,
+        errors: { ...state.errors, ...action.payload },
+      };
+    case actionTypes.CLEAR_ERROR:
+      return {
+        ...state,
+        errors: {},
+      };
+    case actionTypes.SET_UPLOAD_PROGRESS:
+      return {
+        ...state,
+        uploadProgress: { ...state.uploadProgress, ...action.payload },
+      };
+    case actionTypes.RESET_UPLOAD_PROGRESS:
+      return {
+        ...state,
+        uploadProgress: { ...state.uploadProgress, ...action.payload },
+      };
+    default:
+      return state;
+  }
+};
 
-      fetchCartDetails();
+export const useCartProfileForm = () => {
+  const { user } = useAuth(); // Access user data from AuthContext
+  const db = useFirestore();  // Access Firestore from reactfire
+  const storage = useStorage(); // Access Firebase storage from reactfire
+  const toast = useToast();
+
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { cartData, loading, errors, uploadProgress } = state;
+
+  // Fetch existing cart details
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchCartDetails = async () => {
+      dispatch({ type: actionTypes.SET_LOADING, payload: { initialLoad: true } });
+      try {
+        const cartDocRef = doc(db, 'carts', user.uid);
+        const cartDocSnap = await getDoc(cartDocRef);
+
+        if (cartDocSnap.exists()) {
+          const userCartData = cartDocSnap.data();
+          dispatch({
+            type: actionTypes.SET_CART_DATA,
+            payload: userCartData,
+          });
+        } else {
+          console.log('No cart profile found.');
+        }
+      } catch (error) {
+        console.error('Error fetching cart profile:', error);
+        toast({
+          title: 'Error',
+          description: 'Could not load your cart profile. Please try again later.',
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
+      } finally {
+        dispatch({ type: actionTypes.SET_LOADING, payload: { initialLoad: false } });
+      }
+    };
+
+    fetchCartDetails();
+  }, [user, db, toast]);
+
+  // Fetch reviews and calculate average rating
+  const fetchReviews = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      const reviewsColRef = collection(db, 'carts', user.uid, 'reviews');
+      const reviewsSnap = await getDocs(reviewsColRef);
+      const reviews = reviewsSnap.docs.map(doc => doc.data());
+      const averageRating =
+        reviews.length > 0
+          ? reviews.reduce((acc, curr) => acc + curr.rating, 0) / reviews.length
+          : 0;
+
+      dispatch({
+        type: actionTypes.SET_CART_DATA,
+        payload: { reviews, averageRating },
+      });
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+      toast({
+        title: 'Error',
+        description: 'Could not load reviews. Please try again later.',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
     }
   }, [user, db, toast]);
 
-  // Handle input changes for cart information
-  const handleCartChange = (e) => {
-    const { name, value } = e.target;
-    setCartData((prev) => ({ ...prev, [name]: value }));
-  };
+  useEffect(() => {
+    fetchReviews();
+  }, [fetchReviews]);
 
-  // Toggle cart feature switches
-  const handleFeatureToggle = (feature) => {
-    setCartData((prev) => ({
-      ...prev,
-      features: { ...prev.features, [feature]: !prev.features[feature] },
-    }));
-  };
+  // Input change handler
+  const handleCartChange = useCallback((e) => {
+    const { name, value, checked, type } = e.target;
 
-  // Adjust cart capacity by increment/decrement
-  const handleCapacityChange = (increment) => {
-    setCartData((prev) => ({
-      ...prev,
-      capacity: Math.max(1, prev.capacity + increment),
-    }));
-  };
+    if (type === 'checkbox') {
+      dispatch({
+        type: actionTypes.SET_CART_DATA,
+        payload: { features: { ...cartData.features, [name]: checked } },
+      });
+    } else {
+      dispatch({
+        type: actionTypes.SET_CART_DATA,
+        payload: { [name]: value },
+      });
+    }
+  }, [cartData.features]);
 
-  // Upload image to Firebase Storage
-  const handleImageUpload = async (e, index) => {
+  // Image upload handler
+  const handleImageUpload = useCallback(async (e, index) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    setUploading(true);
-    try {
-      const storageRef = ref(storage, `cartImages/${user.uid}/${file.name}`); // Create a storage reference
-      await uploadBytes(storageRef, file); // Upload the file
-      const downloadURL = await getDownloadURL(storageRef); // Get the file's download URL
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    if (!validTypes.includes(file.type)) {
+      toast({
+        title: 'Invalid File Type',
+        description: 'Please upload a JPG, PNG, or GIF image.',
+        status: 'warning',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
 
-      // Update cartData with the new image URL
-      setCartData((prev) => {
-        const newImages = [...prev.images];
-        newImages[index] = downloadURL; // Replace the image at the specified index
-        return { ...prev, images: newImages };
+    // Validate file size (max 5MB)
+    const maxSizeInBytes = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSizeInBytes) {
+      toast({
+        title: 'File Too Large',
+        description: 'Image size should not exceed 5MB.',
+        status: 'warning',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    // Validate image dimensions
+    const img = new Image();
+    img.src = URL.createObjectURL(file);
+    img.onload = async () => {
+      const { width, height } = img;
+      URL.revokeObjectURL(img.src);
+      if (width < 300 || height < 300) {
+        toast({
+          title: 'Invalid Image Dimensions',
+          description: 'Image should be at least 300x300 pixels.',
+          status: 'warning',
+          duration: 3000,
+          isClosable: true,
+        });
+        return;
+      }
+
+      // Proceed with upload
+      const storageRef = ref(storage, `carts/${user.uid}/images/${Date.now()}_${file.name}`);
+      const uploadTask = uploadBytesResumable(storageRef, file);
+
+      dispatch({
+        type: actionTypes.SET_LOADING,
+        payload: { uploading: true },
       });
 
+      uploadTask.on(
+        'state_changed',
+        (snapshot) => {
+          const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+          dispatch({
+            type: actionTypes.SET_UPLOAD_PROGRESS,
+            payload: { [index]: progress },
+          });
+        },
+        (error) => {
+          console.error('Error uploading image:', error);
+          toast({
+            title: 'Upload Failed',
+            description: error.message || 'Failed to upload image.',
+            status: 'error',
+            duration: 5000,
+            isClosable: true,
+          });
+          dispatch({
+            type: actionTypes.RESET_UPLOAD_PROGRESS,
+            payload: { [index]: 0 },
+          });
+          dispatch({
+            type: actionTypes.SET_LOADING,
+            payload: { uploading: false },
+          });
+        },
+        async () => {
+          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+          const newImages = [...cartData.images];
+          newImages[index] = downloadURL;
+          dispatch({
+            type: actionTypes.SET_CART_DATA,
+            payload: { images: newImages },
+          });
+          toast({
+            title: 'Image Uploaded',
+            description: 'Your image has been successfully uploaded.',
+            status: 'success',
+            duration: 3000,
+            isClosable: true,
+          });
+          dispatch({
+            type: actionTypes.RESET_UPLOAD_PROGRESS,
+            payload: { [index]: 100 },
+          });
+          dispatch({
+            type: actionTypes.SET_LOADING,
+            payload: { uploading: false },
+          });
+        }
+      );
+    };
+  }, [cartData.images, storage, user, toast]);
+
+  // Save or update cart profile
+  const handleSaveCartInfo = useCallback(async () => {
+    if (!user) {
       toast({
-        title: 'Image Uploaded',
-        description: 'Your image has been successfully uploaded.',
+        title: 'Unauthorized',
+        description: 'You must be logged in to update your cart profile.',
+        status: 'warning',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    try {
+      const cartDocRef = doc(db, 'carts', user.uid);
+      await setDoc(cartDocRef, cartData, { merge: true });
+      toast({
+        title: 'Cart Profile Updated',
+        description: 'Your cart profile has been successfully updated.',
         status: 'success',
         duration: 3000,
         isClosable: true,
       });
     } catch (error) {
-      console.error('Error uploading image:', error);
+      console.error('Error updating cart profile:', error);
       toast({
-        title: 'Upload Failed',
+        title: 'Update Failed',
         description: error.message,
         status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  // Save or update cart details in Firestore
-  const handleSaveCartInfo = async () => {
-    if (!user) return; // Ensure the user is logged in
-
-    try {
-      const cartDocRef = doc(db, 'carts', user.uid); // Firestore document reference for the cart
-
-      if (cartExists) {
-        // If the cart already exists, update it
-        await updateDoc(cartDocRef, cartData);
-        toast({
-          title: 'Cart Updated',
-          description: 'Your cart details have been successfully updated.',
-          status: 'success',
-          duration: 3000,
-          isClosable: true,
-        });
-      } else {
-        // If the cart doesn't exist, create a new one and update the host ID
-        await setDoc(cartDocRef, {
-          ...cartData,
-          hostId: user.uid, // Store host (user) ID in the cart document
-        });
-
-        // Update the user's document with the cart ID
-        const userDocRef = doc(db, 'users', user.uid);
-        await updateDoc(userDocRef, { cartId: user.uid });
-
-        setCartExists(true); // Mark that the cart now exists
-        toast({
-          title: 'Cart Created',
-          description: 'Your cart has been successfully created.',
-          status: 'success',
-          duration: 3000,
-          isClosable: true,
-        });
-      }
-    } catch (error) {
-      console.error('Error saving cart:', error);
-      toast({
-        title: 'Save Failed',
-        description: error.message,
-        status: 'error',
-        duration: 3000,
+        duration: 5000,
         isClosable: true,
       });
     }
-  };
+  }, [user, db, cartData, toast]);
 
   return {
     cartData,
     loading,
-    uploading,
+    errors,
+    uploadProgress,
     handleCartChange,
-    handleFeatureToggle,
-    handleCapacityChange,
+    handleImageUpload,
     handleSaveCartInfo,
-    handleImageUpload, // Expose image upload handler
+    fetchReviews,
   };
 };

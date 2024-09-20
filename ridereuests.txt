@@ -1,0 +1,68 @@
+Step 1: User after stripe checkout creates a rideRequest document
+// Since there is one rideRequest document per user (as anonymous or logged in) should we store the doc id in users collection?
+STEP 1A) On completion all user fields including paymentintentID is in the document except for the driver/host info -- since we are waiting on a host to accept 
+
+{
+  "paymentIntentId": "pi_3PypAKLZTLOaKlNs2qoCrStv",
+  "user_location": "Pickup Address Example",
+  "id": "fdsWcQfMPbxBbTCBqsQG",
+  "is_driver_assigned": false,
+  "destination_location": "Destination Address Example",
+  "user_email": "test123@gmail.com",
+  "user_uid": "xu27nzMnjjgyjCFSNsrxTFfLTl72",
+  "hostId": "",
+  "hostlocation: ''
+  "rideFee": 5.98,
+  "status": "Pending",
+  "createdAt": "2024-09-14T06:09:18.179Z"
+  "user pickup location" geopoints
+  host_distance_away:''
+  host_duration_to_pickup ''
+}
+
+// the paymentintent id, along with client user, is needed by the user to cancel the ride and thus payment, it is also need by the host (the connected express stripe accountee) to capture, refund, etc 
+
+Step 2: When a host accepts the rideRequest item from a list of riderequests (filtered by   "is_driver_assigned": false,
+ , update the rideRequest document in the database which should make theselected item dissapear in the left panel
+STEP 2A) Update the status to "accepted", update   "is_driver_assigned": to true ,
+//need to implement a in app chat messaging system thats only active with an active session: should the chats be in the rideRequests document
+STEP 2B) Update the hostId and hostlocation fields by merge in the rideRequests document
+// the host (as well as any user) in the users collection has a geolocation feild that constantly updates, I want to use this field and the users location/pickup location to return distance away (using haversine method) and time away - using 25 mph per golfcart to constantly update so user has a stream feed
+example of users doc:[
+{
+  "createdAt": "2024-09-16T17:54:20.963Z",
+  "stripeAccountID": #,
+  "email": "drr@gmail.com",
+  "geolocation": {
+    "lat": 30.312691261919202,
+    "lng": -89.32791797527132
+  }
+    reviews subcollection
+
+}
+]
+STEP 2C) Update the host_distance_away and host_duration_to_pickup fields by merge in the rideRequests document
+
+//if hosts cancels, need to update status cancled by host, and vice versa for user
+//if the user cancels cancel the payment intent, if the host cancels, allow the host to pick again from the ride request list (since only one riderequest can be given a time for users and hosts - need to update some checks for this_
+
+Step 3: When a user cancels the rideRequest, delete the rideRequest document in the database
+STEP 3A) Update the host cancels update status to "cancelled", update "is_driver_assigned": to false,
+
+Step 3B) send the user a notification that host cancled pending more riders in area
+
+Step 4: When a host picks up a user, update the rideRequest document in the database // need to figure out the correct checks to make sure user gets picked up or is able to dispute or is able to refund
+Step 5: on ride completion allow host to push confirm ride and if so capture the funds // need to figure out the correct checks to make sure user gets picked up or is able to dispute or get a refund
+
+
+Step 5a: on ride completion allow user to rate review host and leave tip on app  confirm ride and if so capture the funds // need to figure out the correct checks to make sure user gets successfully dropped  off
+ep 6: on completion updated status to complete, make a copy of the riderequest fields and transfer them to a booking document in the collection bookings as a carbon copy
+
+
+questions: 
+
+I want the dashboard on both the guest and driver to have an active session, what should each look like -
+
+As the owner of the app I want at least 20% of the fund amout and the host gets 80% how do i do this with stripe.
+
+//need to be ready for if payments go awry

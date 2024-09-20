@@ -1,6 +1,6 @@
 // src/hooks/useAppState.jsx
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { createContext, useState, useCallback, useEffect, useContext } from 'react';
 import { 
   collection, 
   setDoc, 
@@ -16,10 +16,13 @@ import {
 import { db } from './firebase/firebaseConfig';
 import { getAuth } from 'firebase/auth';
 
+// Create the App State Context
+export const AppStateContext = createContext();
+
 /**
- * Custom hook to manage global application state related to UI, businesses, and rides.
+ * AppStateProvider component that provides global application state to its children.
  */
-const useAppState = () => {
+export const AppStateProvider = ({ children }) => {
   // ------------------------- UI States -------------------------
   const [darkMode, setDarkMode] = useState(false); // Toggle dark mode
   const [appMode, setAppMode] = useState('rabbit'); // 'rabbit' or 'host' mode
@@ -39,6 +42,7 @@ const useAppState = () => {
   const [rideRequest, setRideRequest] = useState(null); // Current ride request data
   const [loadingRide, setLoadingRide] = useState(false); // Loading state for rides
   const [errorRide, setErrorRide] = useState(null); // Error state for rides
+  const [isHandlingRide, setIsHandlingRide] = useState(false); // New state to track ride handling
 
   // ------------------- Fetch Businesses Function -------------------
   /**
@@ -196,18 +200,40 @@ const useAppState = () => {
     }
   }, []);
 
-  // ------------------- Handle Item Selection -------------------
+  // ------------------- Handle Ride Cancellation -------------------
   /**
-   * Handles the selection of a business item.
-   * @param {object} item - The selected business item.
+   * Cancels the current ride by clearing related states.
    */
-  const handleSelectItem = useCallback((item) => {
-    console.log('handleSelectItem: Item selected', item);
-    setSelectedItem(item);
-    setIsRightPanelOpen(true); // Open right panel with item details
+  const handleCancelRide = useCallback(() => {
+    console.log('handleCancelRide: Cancelling ride.');
+    setSelectedRide(null); // Clear selected ride
+    setRideRequestId(null); // Clear ride request ID
+    setRideRequest(null); // Clear ride request data
+    setIsHandlingRide(false); // Reset handling flag
   }, []);
 
-  // ------------------- Handle Destination Selection -------------------
+  // ------------------- Handle Confirm Ride -------------------
+  /**
+   * Confirms the current ride.
+   */
+  const handleConfirmRide = useCallback(() => {
+    console.log('handleConfirmRide: Confirming ride.');
+    setIsHandlingRide(true); // Set handling flag
+    // Additional confirmation logic can be added here
+  }, []);
+
+  // ------------------- Handle Ride Completion -------------------
+  /**
+   * Marks the ride as completed.
+   */
+  const handleRideCompletion = useCallback(() => {
+    console.log('handleRideCompletion: Completing ride.');
+    setIsHandlingRide(false); // Reset handling flag
+    setSelectedRide(null); // Clear selected ride
+    // Additional completion logic can be added here
+  }, []);
+
+  // ------------------- Handle Destination and Pickup Selection -------------------
   /**
    * Handles the selection of a destination.
    * @param {string} destination - The selected destination address.
@@ -218,7 +244,6 @@ const useAppState = () => {
     // For example, you might want to set it in state or trigger other actions
   }, []);
 
-  // ------------------- Handle Pickup Selection -------------------
   /**
    * Handles the selection of a pickup location.
    * @param {string} pickup - The selected pickup address.
@@ -227,17 +252,6 @@ const useAppState = () => {
     console.log('handleSearchPickupSelect: Pickup selected:', pickup);
     // Implement pickup selection logic here
     // For example, you might want to set it in state or trigger other actions
-  }, []);
-
-  // ------------------- Handle Ride Cancellation -------------------
-  /**
-   * Cancels the current ride by clearing related states.
-   */
-  const handleCancelRide = useCallback(() => {
-    console.log('handleCancelRide: Cancelling ride.');
-    setSelectedRide(null); // Clear selected ride
-    setRideRequestId(null); // Clear ride request ID
-    setRideRequest(null); // Clear ride request data
   }, []);
 
   // ------------------- Effect for App Mode Change -------------------
@@ -251,44 +265,66 @@ const useAppState = () => {
   }, [appMode]);
 
   // ------------------- Return States and Functions -------------------
-  return {
-    // UI States
-    darkMode,
-    setDarkMode,
-    appMode,
-    setAppMode,
-    viewMode,
-    setViewMode,
-    isRightPanelOpen,
-    setIsRightPanelOpen,
-    isLeftPanelOpen,
-    setIsLeftPanelOpen,
+  return (
+    <AppStateContext.Provider
+      value={{
+        // UI States
+        darkMode,
+        setDarkMode,
+        appMode,
+        setAppMode,
+        viewMode,
+        setViewMode,
+        isRightPanelOpen,
+        setIsRightPanelOpen,
+        isLeftPanelOpen,
+        setIsLeftPanelOpen,
 
-    // Business States and Functions
-    businesses,
-    loadingBusinesses,
-    errorBusinesses,
-    fetchBusinesses,
+        // Business States and Functions
+        businesses,
+        loadingBusinesses,
+        errorBusinesses,
+        fetchBusinesses,
 
-    // Item Selection
-    selectedItem,
-    handleSelectItem,
+        // Item Selection
+        selectedItem,
+        handleSelectItem,
 
-    // Ride States and Functions
-    selectedRide,
-    setSelectedRide,
-    rideRequestId,
-    setRideRequestId,
-    rideRequest,
-    loadingRide,
-    errorRide,
-    handleSearchDestinationSelect,
-    handleSearchPickupSelect,
-    handleCancelRide,
-    handleRideRequestCreation,
-    fetchRideRequest,
-    fetchMostRecentRideRequest,
-  };
+        // Ride States and Functions
+        selectedRide,
+        setSelectedRide,
+        rideRequestId,
+        setRideRequestId,
+        rideRequest,
+        loadingRide,
+        errorRide,
+        handleSearchDestinationSelect,
+        handleSearchPickupSelect,
+        handleCancelRide,
+        handleRideRequestCreation,
+        fetchRideRequest,
+        fetchMostRecentRideRequest,
+
+        // New States and Functions
+        isHandlingRide,
+        handleConfirmRide,
+        handleRideCompletion,
+      }}
+    >
+      {children}
+    </AppStateContext.Provider>
+  );
 };
 
-export default useAppState;
+/**
+ * Custom hook to consume AppStateContext.
+ */
+export const useAppState = () => {
+  const context = useContext(AppStateContext);
+  if (!context) {
+    throw new Error('useAppState must be used within an AppStateProvider');
+  }
+  return context;
+};
+
+export default AppStateProvider;

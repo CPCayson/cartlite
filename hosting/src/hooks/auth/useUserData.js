@@ -1,18 +1,14 @@
 // useUserData.js
+
 import { useCallback } from 'react';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
-import { db } from '../firebase/firebaseConfig'; // Adjusted import path
-import { STRIPE_STATUS } from '../auth/constants'; // Adjusted import path
-import { useStripeIntegration } from './useStripeIntegration'; // Adjusted import path
+import { db } from '../firebase/firebaseConfig'; // Adjust import path
+import { STRIPE_STATUS } from './constants'; // Adjust import path
+import { useStripeIntegration } from './useStripeIntegration'; // Adjust import path
 
 export const useUserData = () => {
   const { checkStripeAccountStatus } = useStripeIntegration();
 
-  /**
-   * Updates or creates user data in Firestore.
-   * @param {Object} currentUser - The authenticated user object from Firebase Auth.
-   * @returns {Object} - The updated user data.
-   */
   const updateUserData = useCallback(
     async (currentUser) => {
       console.log('Updating user data for:', currentUser.uid);
