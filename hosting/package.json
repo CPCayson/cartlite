@@ -5,11 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build:vite": "vite build",
+    "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "build:css": "tailwindcss -i ./src/tailwind.css -o ./src/index.css --watch",
-    "build:rollup": "rollup -c"
+    "build:css": "tailwindcss -i ./src/tailwind.css -o ./src/index.css --watch"
   },
   "dependencies": {
     "@chakra-ui/icons": "^2.1.1",
@@ -27,7 +26,6 @@
     "body-parser": "^1.20.2",
     "dot-env": "^0.0.1",
     "firebase": "^9.23.0",
-    "framer-motion": "^11.3.31",
     "isotope-layout": "^3.0.6",
     "lucide-react": "^0.436.0",
     "prettier": "^3.3.3",
@@ -39,7 +37,6 @@
     "react-feather": "^2.0.10",
     "react-firebaseui": "^6.0.0",
     "react-icons": "^5.3.0",
-    "react-leaflet": "^4.2.1",
     "react-masonry-css": "^1.0.16",
     "react-router-dom": "^6.26.1",
     "react-toastify": "^10.0.5",
@@ -50,9 +47,6 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.9.0",
-    "@rollup/plugin-babel": "^6.0.4",
-    "@rollup/plugin-commonjs": "^26.0.1",
-    "@rollup/plugin-node-resolve": "^15.2.3",
     "@types/react": "^18.3.7",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",

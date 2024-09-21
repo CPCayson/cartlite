@@ -1,34 +1,20 @@
-// src/components/shared/SignupForm.jsx
-import React, { useState, useCallback } from 'react';
-import {
-  VStack,
-  Button,
-  FormControl,
-  FormLabel,
-  Input,
-  Heading,
-  useToast,
-  FormErrorMessage,
-  Progress,
-  Checkbox,
-  IconButton,
-} from '@chakra-ui/react';
+import React, { useState, useEffect, useCallback } from 'react';
+import './SignupForm.css';
 import { useAuth } from '@context/AuthContext';
-import { FcGoogle } from 'react-icons/fc';
-import { FaFacebook, FaTwitter } from 'react-icons/fa';
-import { PhoneIcon } from '@chakra-ui/icons';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useToast, Progress } from '@chakra-ui/react';
 import zxcvbn from 'zxcvbn';
 import { useNavigate } from 'react-router-dom';
 import { useStripeIntegration } from '@hooks/auth/useStripeIntegration';
 import { useUserData } from '@hooks/auth/useUserData';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@hooks/firebase/firebaseConfig';
+import { FcGoogle } from 'react-icons/fc';
+import { FaFacebook, FaTwitter } from 'react-icons/fa';
+import { PhoneIcon } from '@chakra-ui/icons';
 
-const MotionInput = motion(Input);
-
-const SignupForm = ({ onClose, isSignup, handleToggle }) => {
-  // Remove internal isSignup state and use prop
+const SignupForm = ({ onClose, isSignup: initialIsSignup, handleToggle: externalHandleToggle }) => {
+  const [showSplash, setShowSplash] = useState(true);
+  const [isFlipped, setIsFlipped] = useState(initialIsSignup);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -56,6 +42,17 @@ const SignupForm = ({ onClose, isSignup, handleToggle }) => {
   const { initializeUserStripeAccount } = useStripeIntegration();
   const { updateUserData } = useUserData();
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    setIsFlipped(initialIsSignup);
+  }, [initialIsSignup]);
+
   const handleInputChange = useCallback((e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -69,8 +66,8 @@ const SignupForm = ({ onClose, isSignup, handleToggle }) => {
     const newErrors = {};
     if (!formData.email) newErrors.email = 'Email is required';
     if (!formData.password) newErrors.password = 'Password is required';
-    if (isSignup && !formData.fullName) newErrors.fullName = 'Full name is required';
-    if (isSignup && passwordStrength < 3) newErrors.password = 'Password is too weak';
+    if (isFlipped && !formData.fullName) newErrors.fullName = 'Full name is required';
+    if (isFlipped && passwordStrength < 3) newErrors.password = 'Password is too weak';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -88,8 +85,7 @@ const SignupForm = ({ onClose, isSignup, handleToggle }) => {
       return;
     }
     try {
-      if (isSignup) {
-        // Register the user
+      if (isFlipped) {
         const userCredential = await register(formData.email, formData.password, {
           fullName: formData.fullName,
         });
@@ -103,7 +99,6 @@ const SignupForm = ({ onClose, isSignup, handleToggle }) => {
 
         const newUser = userCredential.user;
 
-        // Step 1: Save user details to Firebase Firestore with 'isNew: true'
         await updateUserData(newUser, {
           email: formData.email,
           fullName: formData.fullName,
@@ -111,10 +106,8 @@ const SignupForm = ({ onClose, isSignup, handleToggle }) => {
           isNew: true,
         });
 
-        // Step 2: Initialize Stripe customer and Express Connect account
         const stripeData = await initializeUserStripeAccount(newUser.uid, formData.email);
 
-        // Step 3: Update Firebase user document with Stripe information
         const userDocRef = doc(db, 'users', newUser.uid);
         await updateDoc(userDocRef, {
           stripeConnectedAccountId: stripeData.stripeConnectedAccountId,
@@ -124,10 +117,12 @@ const SignupForm = ({ onClose, isSignup, handleToggle }) => {
           stripeLastUpdated: stripeData.stripeLastUpdated,
         });
 
-        // Step 4: Navigate to Stripe Connect Onboarding since 'isNew' is true
-        navigateToStripeOnboarding(stripeData.stripeAccountLink);
+        if (stripeData.stripeAccountLink) {
+          window.location.href = stripeData.stripeAccountLink;
+        } else {
+          navigate('/host');
+        }
       } else {
-        // Handle Login
         await login(formData.email, formData.password);
         toast({
           title: 'Login Successful',
@@ -136,10 +131,8 @@ const SignupForm = ({ onClose, isSignup, handleToggle }) => {
           duration: 3000,
           isClosable: true,
         });
-        // Navigate to home page after successful login
-        navigate('/host'); // Adjust the route as needed
+        navigate('/host');
       }
-      // Close the modal after successful login/signup
       onClose();
     } catch (error) {
       console.error('Authentication error:', error);
@@ -153,35 +146,18 @@ const SignupForm = ({ onClose, isSignup, handleToggle }) => {
     }
   };
 
-  /**
-   * Navigates the user to the Stripe onboarding session.
-   * @param {string} stripeAccountLink - The URL for Stripe onboarding.
-   */
-  const navigateToStripeOnboarding = (stripeAccountLink) => {
-    if (stripeAccountLink) {
-      window.location.href = stripeAccountLink;
-    } else {
-      toast({
-        title: 'Stripe Onboarding Error',
-        description: 'Unable to navigate to Stripe onboarding session.',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
-    }
-  };
-
   const handleSocialSignIn = async (provider) => {
     try {
+      let result;
       switch (provider) {
         case 'google':
-          await googleSignIn();
+          result = await googleSignIn();
           break;
         case 'facebook':
-          await facebookSignIn();
+          result = await facebookSignIn();
           break;
         case 'twitter':
-          await twitterSignIn();
+          result = await twitterSignIn();
           break;
         default:
           throw new Error('Invalid provider');
@@ -193,9 +169,8 @@ const SignupForm = ({ onClose, isSignup, handleToggle }) => {
         duration: 3000,
         isClosable: true,
       });
-      // Close the modal after successful social login
       onClose();
-      navigate('/'); // Redirect after social sign-in
+      navigate('/host');
     } catch (error) {
       console.error(`${provider} sign-in error:`, error);
       toast({
@@ -218,7 +193,8 @@ const SignupForm = ({ onClose, isSignup, handleToggle }) => {
         duration: 3000,
         isClosable: true,
       });
-      navigate('/'); // Redirect after phone sign-in initiation
+      // You might want to navigate to a verification page here
+      // navigate('/verify-phone');
     } catch (error) {
       console.error('Phone sign-in error:', error);
       toast({
@@ -264,172 +240,156 @@ const SignupForm = ({ onClose, isSignup, handleToggle }) => {
     }
   };
 
-  const isLoading = authStatus === 'pending';
+  const handleToggle = () => {
+    setIsFlipped(!isFlipped);
+    if (externalHandleToggle) {
+      externalHandleToggle();
+    }
+  };
+
+  if (showSplash) {
+    return (
+      <div className="splash-screen flex items-center justify-center">
+        <img src="/assets/your-logo.png" alt="Logo" className="logo" />
+      </div>
+    );
+  }
 
   return (
-    <div>
-      <Heading mb={6} textAlign="center">
-        {isSignup ? 'Sign Up' : 'Log In'}
-      </Heading>
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={isSignup ? 'signup' : 'login'}
-          initial={{ opacity: 0, x: 50 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -50 }}
-          transition={{ duration: 0.5 }}
-        >
-          <form onSubmit={handleSubmit}>
-            <VStack spacing={4} align="stretch">
-              <FormControl isInvalid={errors.email || authError}>
-                <FormLabel>Email</FormLabel>
-                <MotionInput
-                  name="email"
+    <div className="card-3d-wrap">
+      <div className={`card-3d-wrapper ${isFlipped ? 'card-flip' : ''}`}>
+        {/* Front Side - Login */}
+        <div className="center-wrap">
+          {!isFlipped && (
+            <form onSubmit={handleSubmit} className="form-container">
+              <h2 className="form-title">Log In</h2>
+              <div className="form-group">
+                <input
                   type="email"
-                  required
+                  name="email"
                   placeholder="Your Email"
+                  className="form-style"
                   value={formData.email}
                   onChange={handleInputChange}
-                  whileFocus={{ scale: 1.05 }}
-                  transition={{ type: 'spring', stiffness: 300 }}
                 />
-                <FormErrorMessage>{errors.email}</FormErrorMessage>
-              </FormControl>
-
-              <FormControl isInvalid={errors.password || authError}>
-                <FormLabel>Password</FormLabel>
-                <MotionInput
-                  name="password"
+                {errors.email && <span className="error-message">{errors.email}</span>}
+              </div>
+              <div className="form-group">
+                <input
                   type="password"
-                  required
+                  name="password"
                   placeholder="Your Password"
+                  className="form-style"
                   value={formData.password}
                   onChange={handleInputChange}
-                  whileFocus={{ scale: 1.05 }}
-                  transition={{ type: 'spring', stiffness: 300 }}
                 />
-                <FormErrorMessage>{errors.password}</FormErrorMessage>
-              </FormControl>
-
-              {isSignup && (
-                <>
-                  <Progress
-                    value={(passwordStrength + 1) * 20} // zxcvbn score: 0-4
-                    colorScheme={passwordStrength > 2 ? 'green' : 'red'}
-                    size="sm"
-                    mb={4}
-                  />
-                  <FormControl isInvalid={errors.fullName}>
-                    <FormLabel>Full Name</FormLabel>
-                    <MotionInput
-                      name="fullName"
-                      type="text"
-                      required
-                      placeholder="Your Full Name"
-                      value={formData.fullName}
-                      onChange={handleInputChange}
-                      whileFocus={{ scale: 1.05 }}
-                      transition={{ type: 'spring', stiffness: 300 }}
-                    />
-                    <FormErrorMessage>{errors.fullName}</FormErrorMessage>
-                  </FormControl>
-                </>
-              )}
-
-              {!isSignup && (
-                <Checkbox
-                  colorScheme="yellow"
-                  isChecked={rememberMe}
+                {errors.password && <span className="error-message">{errors.password}</span>}
+              </div>
+              <div className="checkbox-group">
+                <input
+                  type="checkbox"
+                  id="rememberMe"
+                  checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                >
-                  Remember me
-                </Checkbox>
-              )}
-
-              <Button
-                type="submit"
-                colorScheme="yellow"
-                w="full"
-                isLoading={isLoading}
-                mt={4}
+                />
+                <label htmlFor="rememberMe" className="checkbox-label">Remember me</label>
+              </div>
+              <button type="submit" className="btn">Log In</button>
+              <button type="button" className="btn switch-btn" onClick={handleToggle}>Switch to Sign Up</button>
+              
+              <div className="social-signin">
+                <button type="button" className="social-btn google" onClick={() => handleSocialSignIn('google')}>
+                  <FcGoogle size={20} /> Google
+                </button>
+                <button type="button" className="social-btn facebook" onClick={() => handleSocialSignIn('facebook')}>
+                  <FaFacebook size={20} color="#3b5998" /> Facebook
+                </button>
+                <button type="button" className="social-btn twitter" onClick={() => handleSocialSignIn('twitter')}>
+                  <FaTwitter size={20} color="#1da1f2" /> Twitter
+                </button>
+              </div>
+              
+              <div className="form-group">
+                <input
+                  type="tel"
+                  name="phoneNumber"
+                  placeholder="Your Phone Number"
+                  className="form-style"
+                  value={formData.phoneNumber}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <button
+                type="button"
+                className="btn phone-signin-btn"
+                onClick={handlePhoneSignIn}
               >
-                {isSignup ? 'Sign Up' : 'Log In'}
-              </Button>
-
-              {!isSignup && (
-                <>
-                  <div className="flex justify-between w-full">
-                    <IconButton
-                      icon={<FcGoogle />}
-                      onClick={() => handleSocialSignIn('google')}
-                      isLoading={isLoading}
-                      aria-label="Sign in with Google"
-                      variant="outline"
-                    />
-                    <IconButton
-                      icon={<FaFacebook />}
-                      onClick={() => handleSocialSignIn('facebook')}
-                      isLoading={isLoading}
-                      aria-label="Sign in with Facebook"
-                      variant="outline"
-                    />
-                    <IconButton
-                      icon={<FaTwitter />}
-                      onClick={() => handleSocialSignIn('twitter')}
-                      isLoading={isLoading}
-                      aria-label="Sign in with Twitter"
-                      variant="outline"
-                    />
-                  </div>
-                  <FormControl>
-                    <FormLabel>Phone Number</FormLabel>
-                    <MotionInput
-                      name="phoneNumber"
-                      type="tel"
-                      placeholder="Your Phone Number"
-                      value={formData.phoneNumber}
-                      onChange={handleInputChange}
-                      whileFocus={{ scale: 1.05 }}
-                      transition={{ type: 'spring', stiffness: 300 }}
-                    />
-                  </FormControl>
-                  <Button
-                    leftIcon={<PhoneIcon />}
-                    onClick={handlePhoneSignIn}
-                    w="full"
-                    isLoading={isLoading}
-                    colorScheme="blue"
-                    variant="outline"
-                  >
-                    Sign in with Phone
-                  </Button>
-                  <Button
-                    variant="link"
-                    colorScheme="yellow"
-                    onClick={handlePasswordReset}
-                  >
-                    Forgot Password?
-                  </Button>
-                </>
-              )}
-
-              <Button
-                variant="link"
-                colorScheme="yellow"
-                onClick={handleToggle}
-                mt={4}
-                alignSelf="center"
+                <PhoneIcon /> Sign in with Phone
+              </button>
+              
+              <button
+                type="button"
+                className="btn link-btn"
+                onClick={handlePasswordReset}
               >
-                {isSignup
-                  ? 'Already have an account? Log In'
-                  : "Don't have an account? Sign Up"}
-              </Button>
-            </VStack>
-          </form>
-        </motion.div>
-      </AnimatePresence>
+                Forgot Password?
+              </button>
+            </form>
+          )}
+        </div>
+
+        {/* Back Side - Signup */}
+        <div className="center-wrap back">
+          {isFlipped && (
+            <form onSubmit={handleSubmit} className="form-container">
+              <h2 className="form-title">Sign Up</h2>
+              <div className="form-group">
+                <input
+                  type="text"
+                  name="fullName"
+                  placeholder="Your Full Name"
+                  className="form-style"
+                  value={formData.fullName}
+                  onChange={handleInputChange}
+                />
+                {errors.fullName && <span className="error-message">{errors.fullName}</span>}
+              </div>
+              <div className="form-group">
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="Your Email"
+                  className="form-style"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                />
+                {errors.email && <span className="error-message">{errors.email}</span>}
+              </div>
+              <div className="form-group">
+                <input
+                  type="password"
+                  name="password"
+                  placeholder="Your Password"
+                  className="form-style"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                />
+                {errors.password && <span className="error-message">{errors.password}</span>}
+              </div>
+              <Progress
+                value={(passwordStrength + 1) * 20}
+                className="password-progress"
+                colorScheme={passwordStrength < 3 ? "red" : "green"}
+              />
+              <button type="submit" className="btn">Sign Up</button>
+              <button type="button" className="btn switch-btn" onClick={handleToggle}>Switch to Log In</button>
+            </form>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
 
 export default SignupForm;
+
