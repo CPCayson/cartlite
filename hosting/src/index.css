@@ -2498,6 +2498,10 @@ video {
   margin-left: 0.5rem;
 }
 
+.ml-4{
+  margin-left: 1rem;
+}
+
 .mr-1{
   margin-right: 0.25rem;
 }
@@ -2582,6 +2586,10 @@ video {
   height: 2rem;
 }
 
+.h-96{
+  height: 24rem;
+}
+
 .h-full{
   height: 100%;
 }
@@ -2648,10 +2656,6 @@ video {
 
 .w-full{
   width: 100%;
-}
-
-.max-w-2xl{
-  max-width: 42rem;
 }
 
 .max-w-3xl{
@@ -2929,6 +2933,11 @@ video {
   background-color: rgb(168 85 247 / var(--tw-bg-opacity));
 }
 
+.bg-purple-600{
+  --tw-bg-opacity: 1;
+  background-color: rgb(147 51 234 / var(--tw-bg-opacity));
+}
+
 .bg-purple-700{
   --tw-bg-opacity: 1;
   background-color: rgb(126 34 206 / var(--tw-bg-opacity));
@@ -3122,6 +3131,10 @@ video {
   padding-right: 2.5rem;
 }
 
+.text-center{
+  text-align: center;
+}
+
 .font-\[\'Poppins\'\]{
   font-family: 'Poppins';
 }
@@ -3260,6 +3273,11 @@ video {
 .text-purple-700{
   --tw-text-opacity: 1;
   color: rgb(126 34 206 / var(--tw-text-opacity));
+}
+
+.text-red-500{
+  --tw-text-opacity: 1;
+  color: rgb(239 68 68 / var(--tw-text-opacity));
 }
 
 .text-teal-400{
@@ -3970,6 +3988,11 @@ video {
   background-color: rgb(147 51 234 / var(--tw-bg-opacity));
 }
 
+.hover\:bg-purple-700:hover{
+  --tw-bg-opacity: 1;
+  background-color: rgb(126 34 206 / var(--tw-bg-opacity));
+}
+
 .hover\:bg-white:hover{
   --tw-bg-opacity: 1;
   background-color: rgb(255 255 255 / var(--tw-bg-opacity));
@@ -4128,11 +4151,6 @@ video {
   background-color: rgb(107 114 128 / var(--tw-bg-opacity));
 }
 
-.dark\:hover\:text-gray-100:hover:is(.dark *){
-  --tw-text-opacity: 1;
-  color: rgb(243 244 246 / var(--tw-text-opacity));
-}
-
 @media (min-width: 640px){
   .sm\:mb-0{
     margin-bottom: 0px;
@@ -4226,8 +4244,12 @@ video {
 }
 
 @media (min-width: 1024px){
-  .lg\:mb-0{
-    margin-bottom: 0px;
+  .lg\:h-auto{
+    height: auto;
+  }
+
+  .lg\:w-1\/2{
+    width: 50%;
   }
 
   .lg\:grid-cols-3{
