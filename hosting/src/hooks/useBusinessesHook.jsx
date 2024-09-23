@@ -1,17 +1,14 @@
-// src/hooks/useBusinessesHook.jsx
-
 import { useState, useEffect, useCallback, useContext, useMemo } from 'react';
 import { useBookingCalculation } from './useBookingCalculation'; // Adjust path as needed
-import { useAuth } from '../context/AuthContext'; // Adjust path as needed
-import { GeolocationContext } from '../context/GeolocationContext'; // Adjust path as needed
-import { BusinessContext } from '../context/BusinessContext'; // Correctly importing the BusinessContext
+import { useGeolocation } from '../context/GeolocationContext'; // Adjust path as needed
+import { BusinessContext } from '../context/BusinessContext'; // Correct import
 
 const useBusinessesHook = (activeCategory = 'all') => {
   const [sortBy, setSortBy] = useState('name');
   const [searchTerm, setSearchTerm] = useState('');
+  const [cachedBusinesses, setCachedBusinesses] = useState([]);
 
-  const { user } = useAuth();
-  const { geolocation } = useContext(GeolocationContext);
+  const { geolocation } = useGeolocation();
   const { updateBookingAmount } = useBookingCalculation();
 
   const {
@@ -21,15 +18,9 @@ const useBusinessesHook = (activeCategory = 'all') => {
     fetchBusinesses,
     handleSelectItem,
     hasMore,
-    loadMoreBusinesses,
+    loadMoreBusinesses, // Ensure this function is correctly defined in BusinessContext
   } = useContext(BusinessContext);
 
-  /**
-   * Recalculates prices for businesses based on user geolocation.
-   * Only updates the price field to avoid re-rendering the entire list.
-   * @param {Array} businessesData - The array of business objects.
-   * @returns {Array} - The array of businesses with updated prices.
-   */
   const recalculatePrices = useCallback(
     (businessesData) => {
       if (!geolocation) return businessesData;
@@ -40,7 +31,6 @@ const useBusinessesHook = (activeCategory = 'all') => {
           { lat: business.latitude, lng: business.longitude }
         );
 
-        // Only update the price field
         if (price !== null && price !== business.price) {
           return {
             ...business,
@@ -53,40 +43,34 @@ const useBusinessesHook = (activeCategory = 'all') => {
     [updateBookingAmount, geolocation]
   );
 
-  /**
-   * Fetches the initial set of businesses based on the active category.
-   */
   useEffect(() => {
     const fetchInitialBusinesses = async () => {
       try {
         const { businessesData } = await fetchBusinesses(activeCategory);
-        const businessesWithPrices = recalculatePrices(businessesData);
-        // The BusinessContext handles caching, so we just set the filtered businesses here
-        // No need to set state here since BusinessContext manages the businesses
+        setCachedBusinesses(Array.isArray(businessesData) ? businessesData : []);
       } catch (error) {
         console.error('Error fetching initial businesses:', error);
       }
     };
 
-    if (geolocation) {
-      fetchInitialBusinesses();
-    }
-  }, [activeCategory, fetchBusinesses, recalculatePrices, geolocation]);
+    fetchInitialBusinesses();
+  }, [activeCategory, fetchBusinesses]);
 
-  /**
-   * Handles loading more businesses for pagination.
-   */
+  useEffect(() => {
+    if (geolocation && cachedBusinesses.length > 0) {
+      const businessesWithPrices = recalculatePrices(cachedBusinesses);
+      setCachedBusinesses(businessesWithPrices);
+    }
+  }, [geolocation, recalculatePrices, cachedBusinesses]);
+
   const handleLoadMore = useCallback(() => {
     if (hasMore && !loadingBusinesses) {
       loadMoreBusinesses(activeCategory);
     }
   }, [hasMore, loadingBusinesses, loadMoreBusinesses, activeCategory]);
 
-  /**
-   * Memoize filtered and sorted businesses to optimize performance.
-   */
   const filteredBusinessesMemo = useMemo(() => {
-    let filtered = businesses;
+    let filtered = Array.isArray(cachedBusinesses) ? cachedBusinesses : []; // Ensure filtered is always an array
 
     if (searchTerm) {
       filtered = filtered.filter((business) =>
@@ -103,7 +87,6 @@ const useBusinessesHook = (activeCategory = 'all') => {
       );
     }
 
-    // Sorting
     filtered = [...filtered].sort((a, b) => {
       if (sortBy === 'name') {
         return a.name.localeCompare(b.name);
@@ -116,7 +99,7 @@ const useBusinessesHook = (activeCategory = 'all') => {
     });
 
     return filtered;
-  }, [businesses, searchTerm, activeCategory, sortBy]);
+  }, [cachedBusinesses, searchTerm, activeCategory, sortBy]);
 
   return {
     filteredBusinesses: filteredBusinessesMemo,
@@ -129,6 +112,7 @@ const useBusinessesHook = (activeCategory = 'all') => {
     sortBy,
     searchTerm,
     handleSelectItem,
+    businesses: cachedBusinesses
   };
 };
 

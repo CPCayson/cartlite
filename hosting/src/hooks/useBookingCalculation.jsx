@@ -22,33 +22,35 @@ export const useBookingCalculation = () => {
   };
 
   const normalizeDistance = (distance) => {
-    // Implementnormalized value between 1- 5 using distance from 2 miles
-    return distance;
+    // Assuming distances are in kilometers
+    const minDistance = 2; // Minimum distance for price calculation (in km)
+    const maxDistance = 10; // Maximum distance for price calculation (in km)
+    const normalizedValue =
+      ((distance - minDistance) / (maxDistance - minDistance)) * 4 + 1; // Normalize to a value between 1 and 5
+    return Math.max(1, Math.min(normalizedValue, 5)); // Ensure value is within 1-5 range
   };
 
   const calculatePrice = (normalizedDistance) => {
     // Implement your price calculation logic here
     const basePrice = 5;
     const pricePerKm = 2;
-    return basePrice + (normalizedDistance * pricePerKm);
+    return basePrice + normalizedDistance * pricePerKm;
   };
 
   const updateBookingAmount = (pickupCoords, destinationCoords) => {
     // pickupCoords.lat and pickupCoords.lng should be accessed as properties, not functions
     const distance = calculateDistance(
-      pickupCoords.lat, pickupCoords.lng, // Access lat and lng as properties
-      destinationCoords.lat, destinationCoords.lng // Access lat and lng as properties
+      pickupCoords.lat,
+      pickupCoords.lng, // Access lat and lng as properties
+      destinationCoords.lat,
+      destinationCoords.lng // Access lat and lng as properties
     );
-  
+
     const normalizedDistance = normalizeDistance(distance);
     const bookingAmount = calculatePrice(normalizedDistance);
     setBookingAmount(bookingAmount);
     return bookingAmount;
   };
-  
 
   return { bookingAmount, updateBookingAmount };
-
-  
 };
-

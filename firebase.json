@@ -27,6 +27,7 @@
   "functions": {
     "source": "functions",
     "runtime": "nodejs18",
-    "regions": ["us-central1"]
+    "regions": "us-central1"
+    
   }
 }

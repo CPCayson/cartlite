@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 import { useMemo } from 'react';
 import { Button, Box, Text, VStack, HStack } from '@chakra-ui/react';
 import { ChevronUp, ChevronDown } from 'lucide-react';
-import useAppState from '@hooks/useAppState';
+import {useAppState} from '@context/useAppState';
 
 /**
  * BusinessItem component represents a single business in the list or grid.

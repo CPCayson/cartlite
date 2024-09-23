@@ -1,5 +1,3 @@
-
-
 import React, { useReducer, useEffect, useCallback } from 'react';
 import {
   doc,
@@ -16,8 +14,8 @@ import {
   getDownloadURL,
 } from 'firebase/storage';
 import { useToast } from '@chakra-ui/react';
-import { useAuth } from '@context/AuthContext';
-import { useFirestore, useStorage } from 'reactfire'; // Ensures Firebase is accessed through reactfire
+import { useAuth } from '@context/AuthContext'; // Adjust path to your AuthContext
+import { db, storage } from '@hooks/firebase/firebaseConfig'; // Import Firebase config
 
 // Initial state for the form
 const initialState = {
@@ -99,12 +97,9 @@ const reducer = (state, action) => {
 
 const CartProfileForm = () => {
   const { user } = useAuth(); // Access user data from AuthContext
-  const db = useFirestore();  // Use Firestore from reactfire
-  const storage = useStorage(); // Use Firebase storage from reactfire
-  const toast = useToast();
-  
   const [state, dispatch] = useReducer(reducer, initialState);
   const { cartData, loading, errors, uploadProgress } = state;
+  const toast = useToast();
 
   // Fetch cart details
   useEffect(() => {
@@ -140,7 +135,7 @@ const CartProfileForm = () => {
     };
 
     fetchCartDetails();
-  }, [user, db, toast]);
+  }, [user, toast]);
 
   // Fetch reviews and calculate average rating
   const fetchReviews = useCallback(async () => {
@@ -170,7 +165,7 @@ const CartProfileForm = () => {
         isClosable: true,
       });
     }
-  }, [user, db, toast]);
+  }, [user, toast]);
 
   useEffect(() => {
     fetchReviews();
@@ -266,7 +261,7 @@ const CartProfileForm = () => {
         }
       );
     },
-    [cartData.images, storage, user, toast]
+    [cartData.images, user, toast]
   );
 
   // Save or update cart profile
@@ -302,7 +297,7 @@ const CartProfileForm = () => {
         isClosable: true,
       });
     }
-  }, [user, db, cartData, toast]);
+  }, [user, cartData, toast]);
 
   return (
     <div>

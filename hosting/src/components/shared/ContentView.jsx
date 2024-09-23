@@ -1,10 +1,8 @@
-// src/components/shared/ContentView.jsx
-
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { Spinner } from '@chakra-ui/react'; // Correctly import Spinner
+import { Spinner } from '@chakra-ui/react';
 import ItemCard from '@components/shared/ItemCard';
-import useBusinessesHook from '@hooks/useBusinessesHook'; // Adjust path as needed
+import useBusinessesHook from '@hooks/useBusinessesHook';
 
 const ContentView = ({ viewType, activeSort, setActiveSort }) => {
   const {
@@ -18,65 +16,42 @@ const ContentView = ({ viewType, activeSort, setActiveSort }) => {
     sortBy,
     searchTerm,
     handleSelectItem,
-  } = useBusinessesHook(); // No need to pass category here as it's managed in BusinessContext
+  } = useBusinessesHook();
 
-  const [expandedItemId, setExpandedItemId] = useState(null); // For managing expanded view in list mode
+  const [expandedItemId, setExpandedItemId] = useState(null);
+  const [visibleItems, setVisibleItems] = useState(3);
+  const [cachedBusinesses, setCachedBusinesses] = useState([]);
 
   const handleToggleExpand = (itemId) => {
     setExpandedItemId((prevId) => (prevId === itemId ? null : itemId));
   };
 
-  // Log filteredBusinesses to verify uniqueness (remove in production)
+  useEffect(() => {
+    setCachedBusinesses(filteredBusinesses.slice(0, visibleItems));
+  }, [filteredBusinesses, visibleItems]);
+
   useEffect(() => {
     console.log('Filtered Businesses:', filteredBusinesses);
   }, [filteredBusinesses]);
 
-  if (loading && filteredBusinesses.length === 0) {
+  if (loading && cachedBusinesses.length === 0) {
     return (
       <div className="flex justify-center items-center h-full">
-        <Spinner size="xl" color="purple.500" /> {/* Spinner Component */}
+        <Spinner size="xl" color="purple.500" />
       </div>
     );
   }
 
-  if (error && filteredBusinesses.length === 0) {
-    return <div className="text-center text-red-500">Error: {error}</div>; // Handle errors
+  if (error && cachedBusinesses.length === 0) {
+    return <div className="text-center text-red-500">Error: {error}</div>;
   }
 
   return (
-    <div>
-      {/* View Toggle Buttons */}
-      <div className="flex justify-between items-center mb-4">
-        <div className="space-x-2">
-          <button
-            onClick={() => setSortBy('all')}
-            className={`px-3 py-1 rounded-full text-sm font-medium ${
-              sortBy === 'all' ? 'bg-white text-purple-700' : 'bg-white bg-opacity-20 text-white'
-            } focus:outline-none focus:ring-2 focus:ring-purple-500`}
-            aria-pressed={sortBy === 'all'}
-            aria-label="Sort by All"
-          >
-            All
-          </button>
-          <button
-            onClick={() => setSortBy('food')}
-            className={`px-3 py-1 rounded-full text-sm font-medium ${
-              sortBy === 'food' ? 'bg-white text-purple-700' : 'bg-white bg-opacity-20 text-white'
-            } focus:outline-none focus:ring-2 focus:ring-purple-500`}
-            aria-pressed={sortBy === 'food'}
-            aria-label="Sort by Food"
-          >
-            Food
-          </button>
-          {/* Add more sort options if needed */}
-        </div>
-      </div>
-
-      {/* List View */}
+    <div className="p-4 sm:p-6">
       {viewType === 'list' ? (
         <ul className="space-y-4">
-          {filteredBusinesses.map((business) => (
-            <li key={business.id}> {/* Ensure business.id is unique */}
+          {cachedBusinesses.map((business, index) => (
+            <li key={`${business.id}-${index}`}>
               <ItemCard
                 item={business}
                 viewType={viewType}
@@ -86,33 +61,18 @@ const ContentView = ({ viewType, activeSort, setActiveSort }) => {
             </li>
           ))}
         </ul>
-      ) : (
-        /* Grid View */
-        <div
-          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4"
-          style={{ gridAutoRows: 'minmax(150px, auto)' }} // Ensures consistent height
-        >
-          {filteredBusinesses.map((business) => (
-            <ItemCard
-              key={business.id} // Ensure business.id is unique
-              item={business}
-              viewType={viewType}
-              isExpanded={false} // No expansion in grid view
-              onToggleExpand={() => {}}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Load More Button */}
+      ) : null}
       {hasMore && (
         <div className="flex justify-center mt-4">
           <button
-            onClick={loadMoreBusinesses}
+            onClick={() => {
+              setVisibleItems((prev) => prev + 3);
+              loadMoreBusinesses();
+            }}
             className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
             aria-label="Load more businesses"
           >
-            Load More
+            {loading ? <Spinner size="sm" color="white" /> : 'Load More'}
           </button>
         </div>
       )}
@@ -121,9 +81,9 @@ const ContentView = ({ viewType, activeSort, setActiveSort }) => {
 };
 
 ContentView.propTypes = {
-  viewType: PropTypes.oneOf(['list', 'grid']).isRequired, // List or grid view type
-  activeSort: PropTypes.string.isRequired, // Sorting filter
-  setActiveSort: PropTypes.func.isRequired, // Function to set sort option
+  viewType: PropTypes.oneOf(['list']).isRequired,
+  activeSort: PropTypes.string.isRequired,
+  setActiveSort: PropTypes.func.isRequired,
 };
 
 export default ContentView;

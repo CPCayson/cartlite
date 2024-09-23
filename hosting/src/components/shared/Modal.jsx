@@ -30,3 +30,4 @@ Modal.propTypes = {
 };
 
 export default Modal;
+// src/components/shared/RightPanel.jsx

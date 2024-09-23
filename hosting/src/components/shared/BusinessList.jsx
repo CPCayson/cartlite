@@ -5,7 +5,7 @@ import PropTypes from 'prop-types';
 import Isotope from 'isotope-layout';
 import BusinessItem from './BusinessItem';
 import useBusinesses from '@hooks/useBusinessesHook'; // Adjust the path
-import useAppState from '@hooks/useAppState'; // Adjust the path
+import {useAppState} from '@context/useAppState'; // Adjust the path
 
 const BusinessList = ({ categories }) => {
   const [filterKey, setFilterKey] = useState('*');

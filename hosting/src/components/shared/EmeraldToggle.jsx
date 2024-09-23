@@ -2,7 +2,7 @@
 
 import React, { useContext } from 'react';
 import { Rabbit } from 'lucide-react';
-import AppContext from '@context/AppContext';
+import AppContext from '@context/AppStateContext';
 
 const EmeraldToggle = () => {
   const { isHost, toggleHostMode } = useContext(AppContext);

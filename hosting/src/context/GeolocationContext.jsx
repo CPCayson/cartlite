@@ -1,73 +1,41 @@
 // src/context/GeolocationContext.jsx
 
-import React, { createContext, useState, useEffect, useCallback, useContext, useMemo } from 'react';
+import React, { createContext, useState, useEffect, useCallback, useContext } from 'react';
 import PropTypes from 'prop-types';
 import { db } from '../hooks/firebase/firebaseConfig'; // Adjust the path as needed
 import { doc, updateDoc } from 'firebase/firestore';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import throttle from 'lodash/throttle'; // Install lodash if not already: npm install lodash
+import { getAuth } from 'firebase/auth';
 
 // Create the GeolocationContext
 export const GeolocationContext = createContext();
 
-/**
- * GeolocationProvider manages user geolocation state and updates it in Firestore or sessionStorage.
- */
 export const GeolocationProvider = ({ children }) => {
   const auth = getAuth();
   const [user, setUser] = useState(auth.currentUser);
   const [geolocation, setGeolocation] = useState(null); // Local state for geolocation
   const [error, setError] = useState(null); // Error state
 
-  // Listen for authentication state changes
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-    });
-    return () => unsubscribe();
-  }, [auth]);
+  // Function to update geolocation in the state and store in Firestore or sessionStorage
+  const updateGeolocation = useCallback((coords) => {
+    setGeolocation(coords); // Update geolocation state
+    console.log('Geolocation updated in state:', coords);
 
-  /**
-   * Throttled function to update geolocation.
-   * Updates at most once every 5 minutes.
-   */
-  const throttledUpdateGeolocation = useMemo(
-    () =>
-      throttle((coords) => {
-        setGeolocation((prevCoords) => {
-          // Prevent updating if coordinates haven't changed
-          if (
-            prevCoords &&
-            prevCoords.lat === coords.lat &&
-            prevCoords.lng === coords.lng
-          ) {
-            return prevCoords;
-          }
-          return coords;
-        });
+    if (user) {
+      const userRef = doc(db, 'users', user.uid);
+      updateDoc(userRef, { geolocation: coords })
+        .then(() => console.log('Geolocation successfully stored in Firestore:', coords))
+        .catch((error) => console.error('Error updating geolocation in Firestore:', error));
+    } else {
+      try {
+        sessionStorage.setItem('geolocation', JSON.stringify(coords));
+        console.log('Geolocation successfully stored in sessionStorage:', coords);
+      } catch (error) {
+        console.error('Error storing geolocation in sessionStorage:', error);
+      }
+    }
+  }, [user]);
 
-        console.log('Geolocation updated in state:', coords);
-
-        if (user) {
-          const userRef = doc(db, 'users', user.uid);
-          updateDoc(userRef, { geolocation: coords })
-            .then(() => console.log('Geolocation successfully stored in Firestore:', coords))
-            .catch((error) => console.error('Error updating geolocation in Firestore:', error));
-        } else {
-          try {
-            sessionStorage.setItem('geolocation', JSON.stringify(coords));
-            console.log('Geolocation successfully stored in sessionStorage:', coords);
-          } catch (error) {
-            console.error('Error storing geolocation in sessionStorage:', error);
-          }
-        }
-      }, 300000), // 300,000 ms = 5 minutes
-    [user]
-  );
-
-  /**
-   * Watch the user's location with throttling.
-   */
+  // Function to watch the user's location continuously
   useEffect(() => {
     if (navigator.geolocation) {
       const watchId = navigator.geolocation.watchPosition(
@@ -76,34 +44,22 @@ export const GeolocationProvider = ({ children }) => {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
           };
-          throttledUpdateGeolocation(coords);
+          updateGeolocation(coords);
         },
-        (err) => {
-          console.error('Error getting user location:', err);
+        (error) => {
+          console.error('Error getting user location:', error);
           setError('Unable to retrieve location.');
         },
         { enableHighAccuracy: true, timeout: 50000, maximumAge: 0 }
       );
-
-      return () => {
-        navigator.geolocation.clearWatch(watchId);
-        throttledUpdateGeolocation.cancel(); // Cancel any pending throttled calls
-      };
+      return () => navigator.geolocation.clearWatch(watchId);
     } else {
       setError('Geolocation is not supported by your browser.');
     }
-  }, [throttledUpdateGeolocation]);
-
-  /**
-   * Memoize the context value to prevent unnecessary re-renders.
-   */
-  const contextValue = useMemo(
-    () => ({ geolocation, updateGeolocation: throttledUpdateGeolocation, error }),
-    [geolocation, throttledUpdateGeolocation, error]
-  );
+  }, [updateGeolocation]);
 
   return (
-    <GeolocationContext.Provider value={contextValue}>
+    <GeolocationContext.Provider value={{ geolocation, updateGeolocation, error }}>
       {children}
     </GeolocationContext.Provider>
   );

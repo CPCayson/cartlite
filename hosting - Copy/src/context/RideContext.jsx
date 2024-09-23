@@ -20,7 +20,7 @@ import {
 import { db } from '@hooks/firebase/firebaseConfig'; // Adjust the path as needed
 import { getAuth, onAuthStateChanged, signInAnonymously } from 'firebase/auth';
 import PropTypes from 'prop-types';
-import { useGeolocation } from '@context/GeolocationContext';
+import  {useGeolocation} from '@context/GeolocationContext';
 import {capturePayment, refundPayment} from '@api/stripeApi'
 // Create the Ride Context
 export const RideContext = createContext();

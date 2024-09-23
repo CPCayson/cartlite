@@ -7,7 +7,7 @@ import HostDashboard from './Host/HostDashboard';
 import { useUI } from '@context/UIContext'; // Custom hook to consume UIContext
 import { useRide } from '@context/RideContext'; // Custom hook to consume RideContext
 
-const Dashboard = () => {
+const ... = () => {
   const { appMode } = useUI();
   const { 
     isHandlingRide, 
@@ -38,4 +38,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default ...;

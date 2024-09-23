@@ -1,5 +1,5 @@
 // src/components/SearchBar.jsx
-import { useState, useEffect, useRef, useContext, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useContext, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { RefreshCw, Search } from 'lucide-react';
 import {
@@ -16,10 +16,8 @@ import { loadGoogleMapsScript } from '@api/googleMapsApi';
 import { useBookingCalculation } from '@hooks/useBookingCalculation';
 import { GeolocationContext } from '@context/GeolocationContext';
 import { useAuth } from '@context/AuthContext';
+import './styles.css'; // Import the CSS file
 
-/**
- * SearchBar component allows users to select destination and pickup locations and book rides.
- */
 const SearchBar = ({
   onDestinationSelect,
   onPickupSelect,
@@ -201,13 +199,12 @@ const SearchBar = ({
   return (
     <Box
       p={4}
-      bgGradient="linear(to-r, teal.400, teal.500, teal.600)"
+      bgGradient="linear(to-r, purple.500, pink.500)"
       rounded="lg"
       w="full"
       h="auto"
       position="sticky"
       top={0}
-      zIndex={1000}
     >
       <Flex direction="column" gap={4} w="full">
         <form
@@ -224,8 +221,8 @@ const SearchBar = ({
               placeholder="Enter destination..."
               value={destination}
               onChange={(e) => setDestination(e.target.value)}
-              className="w-full"
-              bgGradient="linear(to-r, teal.400, teal.500, teal.600)"
+              className="w-full white-placeholder" // Apply the CSS class here
+              bgGradient="linear(to-r, purple.500, pink.500)"
               color="white"
               fontWeight="bold"
               fontFamily="Poppins, sans-serif"
@@ -248,9 +245,9 @@ const SearchBar = ({
                 placeholder="Pickup location..."
                 value={pickupLocation}
                 onChange={(e) => setPickupLocation(e.target.value)}
-                className="w-full"
+                className="w-full white-placeholder" // Apply the CSS class here
                 isReadOnly={!isEditingPickup}
-                bgGradient="linear(to-r, teal.400, teal.500, teal.600)"
+                bgGradient="linear(to-r, purple.500, pink.500)"
                 color="white"
                 fontWeight="bold"
                 fontFamily="Poppins, sans-serif"
@@ -269,7 +266,7 @@ const SearchBar = ({
                 placeholder="Preferred Pickup Time"
                 value={preferredPickupTime}
                 onChange={(e) => setPreferredPickupTime(e.target.value)}
-                bgGradient="linear(to-r, teal.400, teal.500, teal.600)"
+                bgGradient="linear(to-r, purple.500, pink.500)"
                 color="white"
                 fontWeight="bold"
                 fontFamily="Poppins, sans-serif"
@@ -290,7 +287,7 @@ const SearchBar = ({
               >
                 <NumberInputField
                   placeholder="Passengers"
-                  bgGradient="linear(to-r, teal.400, teal.500, teal.600)"
+                  bgGradient="linear(to-r, purple.500, pink.500)"
                   color="white"
                   fontWeight="bold"
                   fontFamily="Poppins, sans-serif"
@@ -312,7 +309,226 @@ const SearchBar = ({
             >
               {isLoading
                 ? 'Processing...'
-                : `Book and Checkout (${bookingAmount ? `$${bookingAmount}` : '...'} )`}
+                : `Book and                import React, { useState, useEffect } from 'react';
+                import { useNavigate } from 'react-router-dom';
+                import { useDisclosure } from '@chakra-ui/react';
+                import { useAppState } from '@context/AppStateContext'; // Import the AppStateContext
+                
+                // Countdown Timer Component
+                const CountdownTimer = () => {
+                  const [timeLeft, setTimeLeft] = useState({
+                    days: 0,
+                    hours: 0,
+                    minutes: 0,
+                    seconds: 0,
+                  });
+                
+                  useEffect(() => {
+                    // Countdown logic here
+                  }, []);
+                
+                  return (
+                    <div className="flex justify-center space-x-4">
+                      {Object.entries(timeLeft).map(([unit, value]) => (
+                        <div key={unit} className="text-center">
+                          <div className="bg-white text-teal-600 rounded-lg p-4 shadow-lg">
+                            <span className="text-4xl font-bold">{value.toString().padStart(2, '0')}</span>
+                          </div>
+                          <span className="text-sm uppercase mt-2">{unit}</span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                };
+                
+                // Walkthrough Screen Component
+                const WalkthroughScreen = ({ title, subtitle, description, imageSrc, imageAlt, iconSrc, gradient, isPanelExpanded }) => (
+                  <motion.div
+                    initial={{ opacity: 0, x: 300 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -300 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    className="flex flex-col items-center text-center"
+                  >
+                    <div className="w-full h-48 mb-6 overflow-hidden rounded-lg shadow-lg">
+                      <img src={imageSrc} alt={imageAlt} className="w-full h-full object-contain" />
+                    </div>
+                    <img src={iconSrc} alt={`${title} Icon`} className="w-20 h-20 mb-4" />
+                    <h2 className="text-3xl font-bold mb-2 text-white font-poppins">{title}</h2>
+                    {!isPanelExpanded && (
+                      <>
+                        <h3 className="text-xl mb-4 text-white font-poppins">{subtitle}</h3>
+                        <p className="text-white font-poppins text-lg leading-relaxed">{description}</p>
+                      </>
+                    )}
+                  </motion.div>
+                );
+                
+                // Walkthrough Component
+                const Walkthrough = ({ onComplete, initialScreen = 0, isPanelExpanded }) => {
+                  const [currentScreen, setCurrentScreen] = useState(initialScreen);
+                  const [isVisible, setIsVisible] = useState(true);
+                
+                  const screens = [
+                    {
+                      title: "For Riders",
+                      subtitle: "Cruise Bay Saint Louis",
+                      description: "Hop on a golf cart for a breezy ride to local hotspots, beaches, and events. Experience our town like a local!",
+                      imageSrc: "/assets/cart1.png",
+                      imageAlt: "Golf cart ride",
+                      gradient: "from-teal-400 via-teal-500 to-teal-600",
+                      iconSrc: "/assets/cake.png"
+                    },
+                    {
+                      title: "For Businesses",
+                      subtitle: "Deliver Bay Saint Louis Flavors",
+                      description: "Connect with customers through our golf cart delivery service. Bring your local specialties right to their door!",
+                      imageSrc: "/assets/shop.png",
+                      imageAlt: "Local restaurant",
+                      gradient: "from-orange-400 via-orange-500 to-orange-600",
+                      iconSrc: "/assets/shop.png"
+                    },
+                    {
+                      title: "For Drivers",
+                      subtitle: "Share Your Bay Saint Louis",
+                      description: "Turn your golf cart into an earning opportunity. Show off your town, meet new people, and work on your own schedule.",
+                      imageSrc: "/assets/marker.png",
+                      imageAlt: "Golf cart driver",
+                      gradient: "from-purple-500 via-purple-600 to-purple-700",
+                      iconSrc: "/assets/moon.png"
+                    }
+                  ];
+                
+                  const nextScreen = () => {
+                    setCurrentScreen((prev) => (prev + 1) % screens.length);
+                  };
+                
+                  const prevScreen = () => {
+                    setCurrentScreen((prev) => (prev - 1 + screens.length) % screens.length);
+                  };
+                
+                  if (!isVisible) return null;
+                
+                  return (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                      <div className={`rounded-lg p-6 md:p-8 max-w-md w-full bg-gradient-to-r ${screens[currentScreen].gradient} shadow-2xl`}>
+                        <div className="flex justify-center mb-4">
+                          {screens.map((_, index) => (
+                            <motion.div
+                              key={index}
+                              className={`w-2 h-2 rounded-full mx-1 ${index === currentScreen ? 'bg-white' : 'bg-white bg-opacity-50'}`}
+                              animate={{ scale: index === currentScreen ? 1.25 : 1 }}
+                              transition={{ duration: 0.3 }}
+                            />
+                          ))}
+                        </div>
+                
+                        <AnimatePresence mode="wait">
+                          <WalkthroughScreen key={currentScreen} {...screens[currentScreen]} isPanelExpanded={isPanelExpanded} />
+                        </AnimatePresence>
+                
+                        <button
+                          onClick={prevScreen}
+                          className={`absolute left-4 top-1/2 transform -translate-y-1/2 ${currentScreen === 0 ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+                          disabled={currentScreen === 0}
+                        >
+                          <img src="/assets/chevron-left.png" alt="Previous" className="w-8 h-8 text-white" />
+                        </button>
+                
+                        <button
+                          onClick={nextScreen}
+                          className="absolute right-4 top-1/2 transform -translate-y-1/2"
+                        >
+                          <img src="/assets/chevron-right.png" alt="Next" className="w-8 h-8 text-white" />
+                        </button>
+                
+                        <div className="mt-8 flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+                          <button
+                            onClick={() => setIsVisible(false)}
+                            className="text-white opacity-90 hover:opacity-100 font-poppins text-lg"
+                          >
+                            Skip
+                          </button>
+                          <button
+                            onClick={nextScreen}
+                            className="bg-white text-teal-600 px-6 py-2 rounded-full hover:bg-yellow-300 hover:text-teal-700 font-poppins text-lg font-semibold"
+                          >
+                            {currentScreen === screens.length - 1 ? 'Get Started' : 'Next'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                };
+                
+                // Main OnBoard Component
+                const OnBoard = () => {
+                  const { isPanelExpanded } = useAppState(); // Get the isPanelExpanded state
+                  const [showWalkthrough, setShowWalkthrough] = useState(true);
+                  const [walkthroughScreen, setWalkthroughScreen] = useState(0);
+                  const [showConfetti, setShowConfetti] = useState(false);
+                  const [confettiConfig, setConfettiConfig] = useState({ x: 0, y: 0 });
+                  const navigate = useNavigate(); // Initialize useNavigate
+                
+                  // Initialize useDisclosure for both modals
+                  const {
+                    isOpen: isSignupOpen,
+                    onOpen: onSignupOpen,
+                    onClose: onSignupClose
+                  } = useDisclosure();
+                
+                  const {
+                    isOpen: isBusinessOpen,
+                    onOpen: onBusinessOpen,
+                    onClose: onBusinessClose
+                  } = useDisclosure();
+                
+                  useEffect(() => {
+                    // Any necessary effect logic here
+                  }, []);
+                
+                  // Sections Array
+                  const sections = [
+                    {
+                      title: "For Riders",
+                      description: "Cruise Bay Saint Louis in style. Grab a golf cart ride to local hotspots and hidden gems.",
+                      gradient: "from-teal-400 via-teal-500 to-teal-600",
+                      iconSrc: "/assets/moon.png"
+                    },
+                    {
+                      title: "For Businesses",
+                      description: "Expand your reach. Let our golf carts bring your local flavors directly to customers.",
+                      gradient: "from-orange-400 via-orange-500 to-orange-600",
+                      iconSrc: "/assets/shop.png"
+                    },
+                    {
+                      title: "For Drivers",
+                      description: "Share your Bay Saint Louis. Turn your golf cart into a fun, flexible earning opportunity.",
+                      gradient: "from-purple-500 via-purple-600 to-purple-700",
+                      iconSrc: "/assets/marker.png"
+                    }
+                  ];
+                
+                  // Handle "Learn More" Click
+                  const handleLearnMore = (index, event) => {
+                    // Handle learn more logic here
+                  };
+                
+                  return (
+                    <div>
+                      {showWalkthrough && (
+                        <Walkthrough
+                          onComplete={() => setShowWalkthrough(false)}
+                          initialScreen={walkthroughScreen}
+                          isPanelExpanded={isPanelExpanded}
+                        />
+                      )}
+                      {!isPanelExpanded && <CountdownTimer />}
+                    </div>
+                  );
+                };
+                
+                export default OnBoard; Checkout (${bookingAmount ? `$${bookingAmount.toFixed(2)}` : '...'} )`}
             </Button>
           )}
         </form>

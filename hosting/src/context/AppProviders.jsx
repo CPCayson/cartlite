@@ -1,17 +1,22 @@
 // src/AppProviders.jsx
-import { ErrorBoundary } from './ErrorBoundary';
-import { FirebaseAppProvider } from 'reactfire';
-import { AuthProvider } from './AuthContext';
-import { ChakraProvider, extendTheme } from '@chakra-ui/react';
-import { MapsProvider } from './MapsContext';
+
+import React from 'react';
+import { ChakraProvider } from '@chakra-ui/react';
+import { BrowserRouter as Router } from 'react-router-dom';
+import { AuthProvider } from '@context/AuthContext';
+import { BusinessProvider } from '@context/BusinessContext';
+import { GeolocationProvider } from '@context/GeolocationContext';
+import { MapsProvider } from '@context/MapsContext';
+import { ModalProvider } from '@context/ModalContext';
+import { ThemeProvider } from '@context/ThemeContext';
+import { RideProvider } from '@context/RideContext';
+import { AppStateProvider } from '@context/AppStateContext'; // Import AppStateProvider
+import {ErrorBoundary} from '@context/ErrorBoundary';
 import PropTypes from 'prop-types';
 import { firebaseConfig } from '@hooks/firebase/firebaseConfig';
-import { GeolocationProvider } from './GeolocationContext';
-import {ThemeProvider} from '@context/ThemeContext';
-import { ModalProvider } from '@context/ModalContext';
-import { AppProvider } from '@context/AppContext';
-import { BusinessProvider } from './BusinessContext';
-import { RideProvider } from './RideContext';
+import { FirebaseAppProvider } from 'reactfire';
+import { extendTheme } from '@chakra-ui/react';
+
 const customTheme = extendTheme({
   breakpoints: {
     sm: '30em',
@@ -25,38 +30,34 @@ const customTheme = extendTheme({
 
 const AppProviders = ({ children }) => (
   <ErrorBoundary>
-        <BusinessProvider>
-
-   < GeolocationProvider>
-    <FirebaseAppProvider firebaseConfig={firebaseConfig}>
+    <GeolocationProvider>
       <AuthProvider>
-        
-        <RideProvider>
-        <ThemeProvider>
-          <ModalProvider>
-<AppProvider>
-        
-        <ChakraProvider theme={customTheme}>
-          <MapsProvider apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
-            {/* Add ThemeContext.Provider here if needed */}
-            {children}
-          </MapsProvider>
-        </ChakraProvider>
-        </AppProvider>
-
-</ModalProvider>
-
-</ThemeProvider>
-</RideProvider>
+        <BusinessProvider>
+          <FirebaseAppProvider firebaseConfig={firebaseConfig}>
+            <RideProvider>
+              <ThemeProvider>
+                <ModalProvider>
+                    <AppStateProvider> {/* Wrap with AppStateProvider */}
+                      <ChakraProvider theme={customTheme}>
+                        <MapsProvider apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
+                          {/* Add ThemeContext.Provider here if needed */}
+                          {children}
+                        </MapsProvider>
+                      </ChakraProvider>
+                    </AppStateProvider>
+                </ModalProvider>
+              </ThemeProvider>
+            </RideProvider>
+          </FirebaseAppProvider>
+        </BusinessProvider>
       </AuthProvider>
-    </FirebaseAppProvider>
     </GeolocationProvider>
-    </BusinessProvider>
-
   </ErrorBoundary>
 );
+
 AppProviders.propTypes = {
   children: PropTypes.node.isRequired,
 };
 
 export default AppProviders;
+

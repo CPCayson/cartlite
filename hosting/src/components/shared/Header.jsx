@@ -1,72 +1,60 @@
 // src/components/shared/Header.jsx
-
 import React, { useContext } from 'react';
-import { Settings, Moon, Sun } from 'lucide-react';
+import { useAppState } from '@context/AppStateContext';
 import ThemeContext from '@context/ThemeContext';
-import { useAuth } from '@context/AuthContext';
-import ModalContext from '@context/ModalContext';
-import AppContext from '@context/AppContext';
+import { Moon, Sun, LogIn } from 'lucide-react';
+import { Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, useDisclosure } from '@chakra-ui/react';
+import SignupForm from '@components/shared/SignupForm';
+import SearchBar from '@components/shared/SearchBar';
+import { useMode } from '@context/ModeContext';
 
-const Header = () => {
-  const { darkMode, toggleDarkMode } = useContext(ThemeContext);
-  const { user, logout } = useAuth();
-  const { toggleModal } = useContext(ModalContext);
-  const { toggleRightPanel } = useContext(AppContext); // Added for toggling RightPanel
+const Header = ({ onDestinationSelect, onPickupSelect, onBookRide, initialLatLng, autoPopulateDestination }) => {
+  const { darkMode, setDarkMode } = useContext(ThemeContext);
+  const { isGuestMode, toggleMode } = useMode();
+  const { isOpen, onOpen, onClose } = useDisclosure();
 
-  const handleLogout = () => {
-    logout();
-  };
+  const toggleDarkMode = () => setDarkMode((prev) => !prev);
+
+  const headerClass = isGuestMode
+    ? 'bg-gradient-to-r from-teal-400 via-teal-500 to-teal-600'
+    : 'bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600';
 
   return (
-    <header className="header flex justify-between items-center p-4 bg-teal-600 dark:bg-teal-700">
-      <h1 className="header-title text-xl sm:text-2xl font-bold text-white">cartRABBIT</h1>
-
-      <div className="header-actions flex items-center space-x-2 sm:space-x-4">
-        {user && user.isAnonymous ? (
-          <button
-            onClick={() => toggleModal('signup')}
-            className="header-button btn"
-            aria-label="Upgrade Account"
-          >
-            Upgrade Account
-          </button>
-        ) : user ? (
-          <>
-            <span className="header-welcome text-sm sm:text-base text-white">Welcome, {user.email}</span>
-            <button
-              onClick={handleLogout}
-              className="header-button btn"
-              aria-label="Logout"
-            >
-              Logout
+    <>
+      <header className={`flex flex-col p-2 sm:p-4 ${headerClass} shadow-md`}>
+        <div className="flex flex-col sm:flex-row items-center justify-between">
+          <h1 className="text-lg sm:text-xl font-bold text-white">cartRabbit</h1>
+          <div className="flex items-center mt-2 sm:mt-0">
+            <button onClick={toggleDarkMode} className="mr-2 sm:mr-4 text-white">
+              {darkMode ? <Sun size={24} /> : <Moon size={24} />}
             </button>
-          </>
-        ) : (
-          <button
-            onClick={() => toggleModal('signup')}
-            className="header-button btn"
-            aria-label="Log In"
-          >
-            Log In
-          </button>
-        )}
+            <button onClick={onOpen} className="ml-2 sm:ml-4 text-white">
+              <LogIn size={24} />
+            </button>
+          </div>
+        </div>
+        <div className="mt-2 sm:mt-4">
+          <SearchBar
+            onDestinationSelect={onDestinationSelect}
+            onPickupSelect={onPickupSelect}
+            onBookRide={onBookRide}
+            initialLatLng={initialLatLng}
+            autoPopulateDestination={autoPopulateDestination}
+          />
+        </div>
+      </header>
 
-        <button
-          onClick={toggleDarkMode}
-          className="header-button btn"
-          aria-label={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-        >
-          {darkMode ? <Sun size={20} /> : <Moon size={20} />}
-        </button>
-        <button
-          onClick={toggleRightPanel}
-          className="header-button btn"
-          aria-label="Toggle Right Panel"
-        >
-          <Settings size={20} />
-        </button>
-      </div>
-    </header>
+      <Modal isOpen={isOpen} onClose={onClose} size="xl">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>{isGuestMode ? 'Log In' : 'Sign Up'}</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <SignupForm onClose={onClose} isSignup={!isGuestMode} handleToggle={toggleMode} />
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+    </>
   );
 };
 
