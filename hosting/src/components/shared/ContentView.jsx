@@ -87,3 +87,4 @@ ContentView.propTypes = {
 };
 
 export default ContentView;
+

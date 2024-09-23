@@ -128,3 +128,4 @@ const SimplifiedApp = () => {
 };
 
 export default SimplifiedApp;
+
