@@ -1,0 +1,150 @@
+const functions = require('firebase-functions');
+const admin = require('firebase-admin');
+const stripe = require('stripe')(functions.config().stripe.secret); // Store secret in Firebase environment config
+
+admin.initializeApp();
+const db = admin.firestore();
+
+exports.checkStripeStatus = functions.https.onRequest(async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const userDoc = await db.collection('users').doc(email).get();
+
+    if (!userDoc.exists || !userDoc.data().stripeAccountId) {
+      return res.json({ onboarded: false });
+    }
+
+    const user = userDoc.data();
+    const account = await stripe.accounts.retrieve(user.stripeAccountId);
+
+    if (account.details_submitted) {
+      res.json({ onboarded: true });
+    } else {
+      res.json({ onboarded: false });
+    }
+  } catch (error) {
+    console.error('Error checking Stripe status:', error);
+    res.status(500).json({ message: 'Error checking Stripe status' });
+  }
+});
+
+exports.createStripeAccountLink = functions.https.onRequest(async (req, res) => {
+  const { email, userId } = req.body;
+
+  try {
+    const userRef = db.collection('users').doc(userId);
+    const userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+      await userRef.set({ email, stripeAccountId: null });
+    }
+
+    let stripeAccountId = userDoc.data().stripeAccountId;
+    
+    if (!stripeAccountId) {
+      const account = await stripe.accounts.create({
+        type: 'express',
+        business_type: 'individual',
+        email,
+      });
+
+      stripeAccountId = account.id;
+      await userRef.update({ stripeAccountId });
+    }
+
+    const accountLink = await stripe.accountLinks.create({
+      account: stripeAccountId,
+      refresh_url: 'https://yourapp.com/refresh-url',
+      return_url: 'https://yourapp.com/return-url',
+      type: 'account_onboarding',
+    });
+
+    res.json({ url: accountLink.url });
+  } catch (error) {
+    console.error('Error creating Stripe account link:', error);
+    res.status(500).json({ message: 'Error creating Stripe account link' });
+  }
+});
+
+
+
+const functions = require('firebase-functions');
+const admin = require('firebase-admin');
+const stripe = require('stripe')(functions.config().stripe.secret); // Replace with your Stripe secret key
+
+admin.initializeApp();
+const db = admin.firestore();
+
+exports.createStripeAccountLink = functions.https.onRequest(async (req, res) => {
+  const { email, userId, name, address } = req.body; // Accept additional prefilled information from the request
+
+  try {
+    const userRef = db.collection('users').doc(userId);
+    const userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+      await userRef.set({ email, stripeAccountId: null });
+    }
+
+    let stripeAccountId = userDoc.data().stripeAccountId;
+
+    if (!stripeAccountId) {
+      // Create a new Stripe account with prefilled information
+      const account = await stripe.accounts.create({
+        type: 'express',
+        business_type: 'individual', // Could be 'individual' or 'company'
+        individual: {
+          email,
+          first_name: name.split(' ')[0], // Assuming 'name' is a full name string; you might want to handle this differently if name structure varies
+          last_name: name.split(' ')[1] || '', // Handle cases where there's no last name
+          address: {
+            line1: address.line1,
+            city: address.city,
+            state: address.state,
+            postal_code: address.postal_code,
+            country: 'US', // Example country, adjust based on your requirements
+          },
+        },
+        business_profile: {
+          url: 'https://cart-rabbit.com', // Business website
+          mcc: '4121', // Merchant Category Code (MCC) for ride-sharing services
+          product_description: 'We provide high-quality software products for ride-share delivery services.',
+        },
+      });
+
+      stripeAccountId = account.id;
+      await userRef.update({ stripeAccountId });
+    }
+
+    // Create a Stripe account link for onboarding
+    const accountLink = await stripe.accountLinks.create({
+      account: stripeAccountId,
+      refresh_url: 'https://yourapp.com/refresh-url',
+      return_url: 'https://yourapp.com/return-url',
+      type: 'account_onboarding',
+      collect: 'eventually_due',
+      // Add prefilled information here to be forwarded to Stripe
+      prefetch_data: {
+        business_type: 'individual',
+        individual: {
+          email,
+          first_name: name.split(' ')[0],
+          last_name: name.split(' ')[1] || '',
+          address: {
+            line1: address.line1,
+            city: address.city,
+            state: address.state,
+            postal_code: address.postal_code,
+            country: 'US',
+          },
+        },
+      },
+    });
+
+    res.json({ url: accountLink.url });
+  } catch (error) {
+    console.error('Error creating Stripe account link:', error);
+    res.status(500).json({ message: 'Error creating Stripe account link' });
+  }
+});

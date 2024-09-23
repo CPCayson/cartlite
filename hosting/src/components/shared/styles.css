@@ -1,0 +1,5 @@
+/* styles.css */
+.white-placeholder::placeholder {
+    color: white;
+    opacity: 1; /* Ensures the color is fully applied */
+  }
